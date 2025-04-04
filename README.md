@@ -1,8 +1,7 @@
 # DAT550-Project-Chess_bot
 A repository for a UiS project.
 
-Members:
-    -> Raphaël Gauthier
+Members: Raphaël Gauthier
 
 The project consists of designing a chess bot. 
 
