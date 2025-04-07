@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QLabel, QAction, QVBoxLayout, QPushButton
 from PyQt5.QtGui import QPalette, QColor, QPainter, QPainterPath, QPixmap
-from PyQt5.QtCore import Qt, QPropertyAnimation, QPoint
+from PyQt5.QtCore import Qt, QPropertyAnimation, QPoint, pyqtSignal
 
 import sys
 import os
@@ -40,8 +40,13 @@ class MainWindow(QMainWindow):
         self.setGeometry(700, 300, 1200, 1000)
         self.set_dark_mode()
 
+
         self.initUI(engine, link)
+
+        self.engine = engine
+
         self.initMenu()
+
 
     
     # -------- Initialzing methods --------
@@ -67,6 +72,29 @@ class MainWindow(QMainWindow):
         quit_action.setShortcut("Ctrl+Q")
         quit_action.triggered.connect(self.close)
         GameMenu.addAction(quit_action)
+
+        new_game = QAction("New game", self)
+        new_game.setShortcut("Ctrl+N")
+        new_game.triggered.connect(self.new_game)
+        GameMenu.addAction(new_game)
+
+        set_game = QAction("Debbug game", self)
+        set_game.setShortcut("Ctrl+G")
+        set_game.triggered.connect(self.set_game)
+        GameMenu.addAction(set_game)
+
+
+    # -------- Action methods --------
+
+    def new_game(self):
+        """
+        Launch a new game.
+        """
+        self.chessboard.reset_game()
+
+    def set_game(self):
+        self.chessboard.set_game()
+        
 
         
     # -------- Style Sheet methods --------
@@ -153,6 +181,10 @@ class ChessBoard(QWidget):
         self.selected_squares = []       # keep track of all selected squares
 
         self.promotion_widget = PromotionWidget(self)
+        self.promotion = None            # keep track of the prev_pos and new_pose for the promotion
+
+        # Connect the piece_selected signal to a method in this class
+        self.promotion_widget.piece_selected.connect(self.handle_promotion)
 
 
     # -------- Board drawing methods --------
@@ -269,10 +301,12 @@ class ChessBoard(QWidget):
             """
             Draws black circles on the given list of move positions.
             """
+            self.legal_moves = self.back_front.get_legal_moves_coor(self.engine, square)
+            seen = set()
+            self.legal_moves = [x for x in self.legal_moves if not (x in seen or seen.add(x))]  # removes duplicates
+
             painter.setBrush(QColor(0, 0, 0, 120))  # Set color to black and alpha = 120 for transparancy
             painter.setPen(Qt.NoPen)  # No border
-
-            self.legal_moves = self.back_front.get_legal_moves_coor(self.engine, square)
 
             for row, col in self.legal_moves:
                 # Calculate the center of the square
@@ -295,12 +329,6 @@ class ChessBoard(QWidget):
 
         front_piece = self.front_board[row][col]
 
-        # Check if the piece is a pawn on the promotion rank (8th rank for white or 1st rank for black)
-        if front_piece != 0:
-            if front_piece.lower() == 'p' and (row == 0 or row == 7):
-                # Trigger pawn promotion
-                self.pawn_promotion(square_pos)
-                return
 
         # If clicking on an empty square and a piece is selected, move it
         if front_piece == 0 and len(self.selected_squares) > 0:
@@ -375,10 +403,15 @@ class ChessBoard(QWidget):
         """
         Move piece to the new_pos.
         """
-        self.move_animate_piece(piece, prev_pos, new_pos)
+        if piece == 'p' and new_pos[0] == 7 or piece == 'P' and new_pos[0] == 0:    # when there's a promotion
+            self.promotion = [prev_pos, new_pos]
+            self.pawn_promotion(new_pos)
 
-        # Move the piece in the engine (back-front)
-        self.back_front.move_piece(self.engine, prev_pos, new_pos)
+        else:
+            self.move_animate_piece(piece, prev_pos, new_pos)
+
+            # Move the piece in the engine (back-front)
+            self.back_front.move_piece(self.engine, prev_pos, new_pos)
 
 
     def move_animate_piece(self, piece, prev_pos, new_pos):
@@ -451,15 +484,61 @@ class ChessBoard(QWidget):
         x_pos = square_pos[1] * SQUARE_SIZE
         y_pos = square_pos[0] * SQUARE_SIZE
 
+        color = "White" if square_pos[0] == 0 else "Black"
+
         # Show the promotion widget above the square
-        self.promotion_widget.show_at_position(QPoint(x_pos, y_pos))
+        self.promotion_widget.show_at_position(QPoint(x_pos, y_pos), color)
+        
+    
+
+    def handle_promotion(self, selected_piece):
+        """
+        Handle the piece promotion by updating the board and game state.
+        selected_piece = "Q" or "r".
+        """
+        # print(selected_piece)
+        prev_pos, new_pos = self.promotion
+        self.back_front.move_piece(self.engine, prev_pos, new_pos, param = selected_piece)
+        self.read_board()
+        self.update()
+        
 
 
+    # -------- Action methods --------
+    def reset_game(self):
+        """
+        Reset the game.
+        """
+        fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+        self.engine.set_fen(fen)
+        self.read_board()
+        self.update()
+        self.selected_squares = []
+        self.highlighted_square = []
+        self.legal_moves = []
 
+    
+    def set_game(self):
+        """
+        Set the board to a specific position for debbuging.
+        """
+        custom_fen = "8/1P6/8/8/8/8/8/8 w - - 0 1"
+        self.engine.set_fen(custom_fen)
+        self.read_board()
+        self.update()
+        self.selected_squares = []
+        self.highlighted_square = []
+        self.legal_moves = []
+
+
+    
 
 
 
 class PromotionWidget(QWidget):
+    # Create a signal to emit the selected piece
+    piece_selected = pyqtSignal(str)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowFlags(Qt.Popup)  # Make it a popup so it floats above the board
@@ -477,30 +556,42 @@ class PromotionWidget(QWidget):
             layout.addWidget(button)
             self.buttons[button] = option
 
-        self.selected_piece = None
         self.setLayout(layout)
+
+        self.color = None
+
 
     def on_button_clicked(self):
         """
         Slot that handles the selection of a promotion piece.
         """
         button = self.sender()
-        self.selected_piece = self.buttons[button]
+        selected_piece = self.buttons[button]
+
+        # That's where we need to handle which piece will be returned
+        shown_piece = None
+        if selected_piece == "Queen":
+            shown_piece = "q" 
+        elif selected_piece == "Rook":
+            shown_piece = "r" 
+        elif selected_piece == "Bishop":
+            shown_piece = "b" 
+        elif selected_piece == "Knight":
+            shown_piece = "n" 
+
+        # Return the piece
+        self.piece_selected.emit(shown_piece)  # Emit the selected piece
         self.close()  # Close the promotion widget after selection
-        print(f"Selected piece for promotion: {self.selected_piece}")
 
-    def get_selected_piece(self):
-        """
-        Return the selected piece.
-        """
-        return self.selected_piece
-
-    def show_at_position(self, position: QPoint):
+    def show_at_position(self, position: QPoint, color):
         """
         Show the promotion widget at the specified position on the screen.
         """
+        self.color = color
+        print(self.color)
         self.move(position)
         self.show()
+
 
 
      
