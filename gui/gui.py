@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QPushButton, QLabel, QAction
+from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QLabel, QAction, QVBoxLayout, QPushButton
 from PyQt5.QtGui import QPalette, QColor, QPainter, QPainterPath, QPixmap
-from PyQt5.QtCore import Qt, QRect, QPropertyAnimation, QPoint
+from PyQt5.QtCore import Qt, QPropertyAnimation, QPoint
 
 import sys
 import os
@@ -37,13 +37,14 @@ class MainWindow(QMainWindow):
     def __init__(self, engine, link):
         super().__init__()
         self.setWindowTitle("Chess")
-        # self.setGeometry(700, 300, 1200, 1000)
-        self.setGeometry(700, 300, 820, 820)    #"""remove and uncomment line above"""
+        self.setGeometry(700, 300, 1200, 1000)
         self.set_dark_mode()
 
         self.initUI(engine, link)
-        self.initAction()
+        self.initMenu()
 
+    
+    # -------- Initialzing methods --------
 
     def initUI(self, engine, link):
         """
@@ -55,17 +56,20 @@ class MainWindow(QMainWindow):
 
         # Create the chessboard widget and set its parent to central_widget
         self.chessboard = ChessBoard(engine, link, self.central_widget)
-        # self.chessboard.move(20, 100)  # Position it manually
-        self.chessboard.move(10, 10)    #"""remove and uncomment line above"""
+        self.chessboard.move(20, 80)  # Position it manually
 
 
-    def initAction(self):
+    def initMenu(self):
+        self.Menu = self.menuBar()
+        GameMenu = self.Menu.addMenu("Game")
+
         quit_action = QAction("Quit", self)
         quit_action.setShortcut("Ctrl+Q")
         quit_action.triggered.connect(self.close)
-        self.addAction(quit_action)
-        
+        GameMenu.addAction(quit_action)
 
+        
+    # -------- Style Sheet methods --------
 
     def set_dark_mode(self):
         palette = QPalette()
@@ -75,13 +79,60 @@ class MainWindow(QMainWindow):
         palette.setColor(QPalette.WindowText, QColor(255, 255, 255))
 
         # Set button and highlight colors
+        palette.setColor(QPalette.Base, QColor(42, 42, 42))
+        palette.setColor(QPalette.AlternateBase, QColor(66, 66, 66))
+        palette.setColor(QPalette.ToolTipBase, QColor(255, 255, 255))
+        palette.setColor(QPalette.ToolTipText, QColor(255, 255, 255))
+        palette.setColor(QPalette.Text, QColor(255, 255, 255))
         palette.setColor(QPalette.Button, QColor(64, 64, 64))
         palette.setColor(QPalette.ButtonText, QColor(255, 255, 255))
+        palette.setColor(QPalette.BrightText, QColor(255, 0, 0))
+        palette.setColor(QPalette.Link, QColor(42, 130, 218))
         palette.setColor(QPalette.Highlight, QColor(72, 72, 72))
         palette.setColor(QPalette.HighlightedText, QColor(255, 255, 255))
 
         # Apply the dark mode palette
         QApplication.setPalette(palette)
+
+        # Add dark styling for menu bar and menus
+        self.setStyleSheet("""
+        QMenuBar {
+            background-color: #2c2c2c;
+            color: white;
+            padding: 4px;
+            border-radius: 8px;
+        }
+
+        QMenuBar::item {
+            background-color: transparent;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+        }
+
+        QMenuBar::item:selected {
+            background-color: #3c3c3c;
+        }
+
+        QMenu {
+            background-color: #2c2c2c;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 8px;
+            padding: 6px;
+        }
+
+        QMenu::item {
+            background-color: transparent;
+            padding: 6px 16px;
+            border-radius: 4px;
+        }
+
+        QMenu::item:selected {
+            background-color: #444;
+        }
+    """)
+
 
 
 
@@ -100,6 +151,8 @@ class ChessBoard(QWidget):
         self.highlighted_square = []     # to keep track of the square for highlighting
         self.legal_moves = []            # keep track of the possible moves for selected pieces
         self.selected_squares = []       # keep track of all selected squares
+
+        self.promotion_widget = PromotionWidget(self)
 
 
     # -------- Board drawing methods --------
@@ -242,6 +295,13 @@ class ChessBoard(QWidget):
 
         front_piece = self.front_board[row][col]
 
+        # Check if the piece is a pawn on the promotion rank (8th rank for white or 1st rank for black)
+        if front_piece != 0:
+            if front_piece.lower() == 'p' and (row == 0 or row == 7):
+                # Trigger pawn promotion
+                self.pawn_promotion(square_pos)
+                return
+
         # If clicking on an empty square and a piece is selected, move it
         if front_piece == 0 and len(self.selected_squares) > 0:
             prev_square = self.selected_squares[-1]
@@ -294,7 +354,7 @@ class ChessBoard(QWidget):
             self.highlighted_square = [square_pos]
             self.selected_squares = [square_pos]
 
-
+        
         self.update()   # call the paintEvent method to redraw the board
 
 
@@ -369,6 +429,80 @@ class ChessBoard(QWidget):
         # Clear the label and update the board
         self.front_board[new_pos[0]][new_pos[1]] = piece
         self.piece_label.deleteLater()
+        self.read_board()
+        self.update()
+
+
+    # -------- Reading methods --------
+
+    def read_board(self):
+        """
+        Read the engine board and set the front board accordingly.
+        Mostly to update after a castling move.
+        """
+        new_board = self.back_front.read_engine(self.engine)
+        self.front_board = new_board
+
+
+    # -------- Promotion methods --------
+
+    def pawn_promotion(self, square_pos):
+        # Get the position of the square to display the promotion widget above it
+        x_pos = square_pos[1] * SQUARE_SIZE
+        y_pos = square_pos[0] * SQUARE_SIZE
+
+        # Show the promotion widget above the square
+        self.promotion_widget.show_at_position(QPoint(x_pos, y_pos))
+
+
+
+
+
+
+class PromotionWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowFlags(Qt.Popup)  # Make it a popup so it floats above the board
+        self.setFixedSize(200, 150)
+        
+        # Setup the layout and buttons
+        layout = QVBoxLayout(self)
+        
+        self.promotion_options = ["Queen", "Rook", "Bishop", "Knight"]
+        self.buttons = {}
+
+        for option in self.promotion_options:
+            button = QPushButton(option, self)
+            button.clicked.connect(self.on_button_clicked)
+            layout.addWidget(button)
+            self.buttons[button] = option
+
+        self.selected_piece = None
+        self.setLayout(layout)
+
+    def on_button_clicked(self):
+        """
+        Slot that handles the selection of a promotion piece.
+        """
+        button = self.sender()
+        self.selected_piece = self.buttons[button]
+        self.close()  # Close the promotion widget after selection
+        print(f"Selected piece for promotion: {self.selected_piece}")
+
+    def get_selected_piece(self):
+        """
+        Return the selected piece.
+        """
+        return self.selected_piece
+
+    def show_at_position(self, position: QPoint):
+        """
+        Show the promotion widget at the specified position on the screen.
+        """
+        self.move(position)
+        self.show()
+
+
      
 
         
