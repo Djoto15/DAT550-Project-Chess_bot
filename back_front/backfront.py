@@ -74,14 +74,14 @@ class Back_Front():
         moves = self.get_legal_moves(engine, square)
         moves_coor = []                 # store the move coors
         for move in moves:
-            move_uci = move.uci()[2:]      # get the UCI string representation of the move
+            move_uci = move.uci()[2:4]      # get the UCI string representation of the move
             
             moves_coor.append(self.cases[move_uci])
 
         return moves_coor
     
 
-    def move_piece(self, engine, prev_pos, new_pos):
+    def move_piece(self, engine, prev_pos, new_pos, param=None):
         """
         Move the piece in the engine from prev_pos to new_pose.
         Input: prev_pos = (row, col) and new_pos same format
@@ -89,7 +89,10 @@ class Back_Front():
         start = self.cases_inv[prev_pos]
         end = self.cases_inv[new_pos]
 
-        move = engine.move_piece(start + end)
+        if param:
+            move = engine.move_piece(start + end + param)
+        else:
+            move = engine.move_piece(start + end)
 
 
     def read_engine(self, engine):
