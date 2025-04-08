@@ -1,14 +1,9 @@
 from engine import Engine
 from back_front import Back_Front
-
 from gui import MainWindow
 
 import sys
 from PyQt5.QtWidgets import QApplication
-
-# engine = Engine()
-# back_front = Back_Front()
-# back_front.get_pieces_position(engine)
 
 
 def main():
@@ -25,7 +20,7 @@ def main():
 
     app.exec_()
 
-    # This is where the code is runned after the window closed
+    # This is where the code is runned after the window close
 
     sys.exit()
 
