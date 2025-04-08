@@ -280,22 +280,25 @@ class ChessBoard(QWidget):
         Make the bot move.
         """
         chess_move = self.bot.play() # return the move to do using the python-chess format
-        move_uci = chess_move.uci() # string format like "e2e4" or "e7e8q"
+        if chess_move:
+            move_uci = chess_move.uci() # string format like "e2e4" or "e7e8q"
 
-        # Transform the move format for the gui
-        prev_pos = self.back_front.cases[move_uci[:2]]
-        new_pos = self.back_front.cases[move_uci[2:4]]
-        piece = self.front_board[prev_pos[0]][prev_pos[1]]
-        self.front_board[prev_pos[0]][prev_pos[1]] = 0
-        self.update()
+            # Transform the move format for the gui
+            prev_pos = self.back_front.cases[move_uci[:2]]
+            new_pos = self.back_front.cases[move_uci[2:4]]
+            piece = self.front_board[prev_pos[0]][prev_pos[1]]
+            self.front_board[prev_pos[0]][prev_pos[1]] = 0
+            self.update()
 
-        if len(move_uci) < 5:   # if not a pawn promotion
-            self.move_piece(piece, prev_pos, new_pos)
+            if len(move_uci) < 5:   # if not a pawn promotion
+                self.move_piece(piece, prev_pos, new_pos)
+            else:
+                self.engine.move_piece(move_uci)
+
+            self.current_turn = "black" if self.current_turn == "white" else "white"    # Change player's turn
+
         else:
-            self.engine.move_piece(move_uci)
-
-
-        self.current_turn = "black" if self.current_turn == "white" else "white"    # Change player's turn
+            print("Checkmate !")
         
 
 
@@ -436,7 +439,7 @@ class ChessBoard(QWidget):
         """
         Set the board to a specific position for debbuging.
         """
-        custom_fen = "8/1P6/8/8/8/8/8/8 w - - 0 1"
+        custom_fen = "8/1P6/8/8/8/8/8/8 w - - 0 1"  # pawn promotion
         self.engine.set_fen(custom_fen)
         self.read_board()
         self.update()

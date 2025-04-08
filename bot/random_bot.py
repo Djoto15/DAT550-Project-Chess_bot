@@ -20,7 +20,9 @@ class RandomBot():
         Make the move
         """
         legal_moves = self.get_moves()
-        move = random.choice(legal_moves)
-        # self.engine.board.push(move)
-        return move
+        if legal_moves: # if there is not checkmate
+            move = random.choice(legal_moves)
+            return move
+        else:
+            return None
 
