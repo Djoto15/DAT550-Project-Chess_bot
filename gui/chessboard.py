@@ -212,7 +212,7 @@ class ChessBoard(QWidget):
 
                     self.move_piece(prev_front_piece, prev_square, square_pos)
 
-                    # **Deselect everything after capturing**
+                    # Deselect everything after capturing
                     self.selected_squares = []
                     self.highlighted_square = []
                     self.moves = []
