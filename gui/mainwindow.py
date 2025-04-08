@@ -64,6 +64,11 @@ class MainWindow(QMainWindow):
         set_game.triggered.connect(self.set_game)
         GameMenu.addAction(set_game)
 
+        set_bot = QAction("Set bot", self)
+        set_bot.setShortcut("Ctrl+B")
+        set_bot.triggered.connect(self.set_bot)
+        GameMenu.addAction(set_bot)
+
 
     # -------- Action methods --------
 
@@ -75,6 +80,9 @@ class MainWindow(QMainWindow):
 
     def set_game(self):
         self.chessboard.set_game()
+
+    def set_bot(self):
+        self.chessboard.set_bot()
         
 
         
