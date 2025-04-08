@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QLabel, QAction, QVBoxLayout, QPushButton
 from PyQt5.QtGui import QPalette, QColor, QPainter, QPainterPath, QPixmap
-from PyQt5.QtCore import Qt, QPropertyAnimation, QPoint, pyqtSignal
+from PyQt5.QtCore import Qt, QPropertyAnimation, QPoint, pyqtSignal, QTimer
 
 import sys
 import os
@@ -209,15 +209,20 @@ class ChessBoard(QWidget):
                         self.front_board[p_row][p_col] = 0
                         self.move_piece(prev_front_piece, prev_square, square_pos)   # move the piece in the front_board
 
-                        # Deselect everything after moving
+                        
+                        self.current_turn = "black" if self.current_turn == "white" else "white"    # Change player's turn
+
+                        if self.isBot:
+                            QTimer.singleShot(500, lambda: self.play_bot())
+                            # self.play_bot()
+
+                        # Deselect everything after capturing
                         self.selected_squares = []
                         self.highlighted_square = []
                         self.moves = []
+                        
                         self.update()
-                        self.current_turn = "black" if self.current_turn == "white" else "white"    # Change player's turn
-                        self.play_bot()
-                        self.update()
-                        return  # Stop further processing
+                        return
 
             # If clicking on an opponent's piece that can be captured        
             elif front_piece != 0 and len(self.selected_squares) > 0:
@@ -234,13 +239,18 @@ class ChessBoard(QWidget):
 
                         self.move_piece(prev_front_piece, prev_square, square_pos)
 
+                        
+                        self.current_turn = "black" if self.current_turn == "white" else "white"    # Change player's turn
+
+                        if self.isBot:
+                            QTimer.singleShot(500, lambda: self.play_bot())
+                            # self.play_bot()
+                        
                         # Deselect everything after capturing
                         self.selected_squares = []
                         self.highlighted_square = []
                         self.moves = []
-                        self.update()
-                        self.current_turn = "black" if self.current_turn == "white" else "white"    # Change player's turn
-                        self.play_bot()
+
                         self.update()
                         return
             
@@ -269,7 +279,22 @@ class ChessBoard(QWidget):
         """
         Make the bot move.
         """
-        self.bot.play()
+        chess_move = self.bot.play() # return the move to do using the python-chess format
+        move_uci = chess_move.uci() # string format like "e2e4" or "e7e8q"
+
+        # Transform the move format for the gui
+        prev_pos = self.back_front.cases[move_uci[:2]]
+        new_pos = self.back_front.cases[move_uci[2:4]]
+        piece = self.front_board[prev_pos[0]][prev_pos[1]]
+        self.front_board[prev_pos[0]][prev_pos[1]] = 0
+        self.update()
+
+        if len(move_uci) < 5:   # if not a pawn promotion
+            self.move_piece(piece, prev_pos, new_pos)
+        else:
+            self.engine.move_piece(move_uci)
+
+
         self.current_turn = "black" if self.current_turn == "white" else "white"    # Change player's turn
         
 
@@ -404,6 +429,7 @@ class ChessBoard(QWidget):
         self.selected_squares = []
         self.highlighted_square = []
         self.legal_moves = []
+        self.current_turn = "white"
 
     
     def set_game(self):
@@ -417,3 +443,11 @@ class ChessBoard(QWidget):
         self.selected_squares = []
         self.highlighted_square = []
         self.legal_moves = []
+        self.current_turn = "white"
+
+
+    def set_bot(self):
+        """
+        Tell that we use a bot
+        """
+        self.isBot = True

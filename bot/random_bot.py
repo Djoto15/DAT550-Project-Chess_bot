@@ -21,5 +21,6 @@ class RandomBot():
         """
         legal_moves = self.get_moves()
         move = random.choice(legal_moves)
-        self.engine.board.push(move)
+        # self.engine.board.push(move)
+        return move
 
