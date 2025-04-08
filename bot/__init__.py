@@ -1,1 +1,1 @@
-# empty file (__init__.py)
+from .random_bot import RandomBot

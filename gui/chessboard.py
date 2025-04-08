@@ -10,6 +10,7 @@ import math
 
 from gui.variables import PIECE_IMAGES, WHITE, GREEN, YELLOW, SQUARE_SIZE
 from gui.promotion import PromotionWidget
+from bot import RandomBot
 
 
 class ChessBoard(QWidget):
@@ -32,6 +33,22 @@ class ChessBoard(QWidget):
 
         # Connect the piece_selected signal to a method in this class
         self.promotion_widget.piece_selected.connect(self.handle_promotion)
+
+        # Bot integration
+        self.initBot()
+
+
+    def initBot(self):
+        """
+        Initialize the bot integration.
+        """
+        self.bot = RandomBot(self.engine)
+
+        self.current_turn = "white"
+        self.bot_color = "black"
+        self.player_color = "white"
+        self.isBot = False
+        
 
 
     # -------- Board drawing methods --------
@@ -176,61 +193,85 @@ class ChessBoard(QWidget):
 
         front_piece = self.front_board[row][col]
 
+        # Check if it's two player playing or if there's a bot too
+        if self.player_color == self.current_turn or not self.isBot:    # if there is no Bot, two players game
 
-        # If clicking on an empty square and a piece is selected, move it
-        if front_piece == 0 and len(self.selected_squares) > 0:
-            prev_square = self.selected_squares[-1]
-            p_row, p_col = prev_square[0], prev_square[1]
-            prev_front_piece = self.front_board[p_row][p_col]
+            # If clicking on an empty square and a piece is selected, move it
+            if front_piece == 0 and len(self.selected_squares) > 0:
+                prev_square = self.selected_squares[-1]
+                p_row, p_col = prev_square[0], prev_square[1]
+                prev_front_piece = self.front_board[p_row][p_col]
 
-            if prev_front_piece != 0:
-                self.legal_moves = self.back_front.get_legal_moves_coor(self.engine, prev_square)
+                if prev_front_piece != 0:
+                    self.legal_moves = self.back_front.get_legal_moves_coor(self.engine, prev_square)
 
-                if square_pos in self.legal_moves:
-                    self.front_board[p_row][p_col] = 0
-                    self.move_piece(prev_front_piece, prev_square, square_pos)   # move the piece in the front_board
+                    if square_pos in self.legal_moves:
+                        self.front_board[p_row][p_col] = 0
+                        self.move_piece(prev_front_piece, prev_square, square_pos)   # move the piece in the front_board
 
-                    # Deselect everything after moving
-                    self.selected_squares = []
-                    self.highlighted_square = []
-                    self.moves = []
-                    self.update()
-                    return  # Stop further processing
+                        # Deselect everything after moving
+                        self.selected_squares = []
+                        self.highlighted_square = []
+                        self.moves = []
+                        self.update()
+                        self.current_turn = "black" if self.current_turn == "white" else "white"    # Change player's turn
+                        self.play_bot()
+                        self.update()
+                        return  # Stop further processing
 
-        # If clicking on an opponent's piece that can be captured        
-        elif front_piece != 0 and len(self.selected_squares) > 0:
-            prev_square = self.selected_squares[-1]
-            p_row, p_col = prev_square[0], prev_square[1]
-            prev_front_piece = self.front_board[p_row][p_col]
+            # If clicking on an opponent's piece that can be captured        
+            elif front_piece != 0 and len(self.selected_squares) > 0:
+                prev_square = self.selected_squares[-1]
+                p_row, p_col = prev_square[0], prev_square[1]
+                prev_front_piece = self.front_board[p_row][p_col]
 
-            if prev_front_piece != 0 and ((front_piece.isupper() and prev_front_piece.islower()) or front_piece.islower() and prev_front_piece.isupper()):
-                self.legal_moves = self.back_front.get_legal_moves_coor(self.engine, prev_square)
+                if prev_front_piece != 0 and ((front_piece.isupper() and prev_front_piece.islower()) or front_piece.islower() and prev_front_piece.isupper()):
+                    self.legal_moves = self.back_front.get_legal_moves_coor(self.engine, prev_square)
 
-                if square_pos in self.legal_moves:
-                    self.front_board[square_pos[0]][square_pos[1]] = 0
-                    self.front_board[prev_square[0]][prev_square[1]] = 0
+                    if square_pos in self.legal_moves:
+                        self.front_board[square_pos[0]][square_pos[1]] = 0
+                        self.front_board[prev_square[0]][prev_square[1]] = 0
 
-                    self.move_piece(prev_front_piece, prev_square, square_pos)
+                        self.move_piece(prev_front_piece, prev_square, square_pos)
 
-                    # Deselect everything after capturing
-                    self.selected_squares = []
-                    self.highlighted_square = []
-                    self.moves = []
-                    self.update()
-                    return
-        
-        if front_piece != 0:
-            self.highlighted_square.append(square_pos)
-            self.selected_squares.append(square_pos)
+                        # Deselect everything after capturing
+                        self.selected_squares = []
+                        self.highlighted_square = []
+                        self.moves = []
+                        self.update()
+                        self.current_turn = "black" if self.current_turn == "white" else "white"    # Change player's turn
+                        self.play_bot()
+                        self.update()
+                        return
+            
+            if front_piece != 0:
+                self.highlighted_square.append(square_pos)
+                self.selected_squares.append(square_pos)
 
 
-        # Square processing
-        if front_piece != 0:
-            self.highlighted_square = [square_pos]
-            self.selected_squares = [square_pos]
+            # Square processing
+            if front_piece != 0:
+                self.highlighted_square = [square_pos]
+                self.selected_squares = [square_pos]
+
+            
+
+        else:
+            pass
 
         
         self.update()   # call the paintEvent method to redraw the board
+        
+
+
+    # -------- Bot methods --------
+    def play_bot(self):
+        """
+        Make the bot move.
+        """
+        self.bot.play()
+        self.current_turn = "black" if self.current_turn == "white" else "white"    # Change player's turn
+        
 
 
 
