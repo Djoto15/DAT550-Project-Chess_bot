@@ -1,0 +1,1 @@
+# A simple chess bot using decision tree and not trained on a database
