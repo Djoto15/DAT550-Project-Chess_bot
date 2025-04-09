@@ -7,6 +7,10 @@ class Engine():
     def __init__(self):
         self.board = chess.Board()
         self.SQUARES = chess.SQUARES
+
+        self.checkmate = False
+        self.stalemate = False
+        self.insufficient_material = False
         self.game_over = False
 
     # Example of delegating a method to the chess.Board instance
@@ -33,6 +37,10 @@ class Engine():
     def is_stalemate(self):
         """Check if the current position is stalemate."""
         return self.board.is_stalemate()
+    
+    def is_insufficient_material(self):
+        """Check is there is insufficient material."""
+        return self.board.is_insufficient_material()
     
     def is_game_over(self):
         """Check if the game is over"""
@@ -62,8 +70,19 @@ class Engine():
         self.board.push(valid_move)
 
         if self.is_checkmate():
+            self.checkmate = True
             self.game_over = True
-            print("Game over!")
+            print("Checkmate!")
+
+        elif self.is_stalemate():
+            self.stalemate = True
+            self.game_over = True
+            print("Stalemate !")
+
+        elif self.is_insufficient_material():
+            self.insufficient_material = True
+            self.game_over = True
+            print("Insufficient material !")
 
 
 
