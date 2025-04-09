@@ -1,7 +1,6 @@
 import chess
 import random
 
-
 def random_bot_move(board):
     """Returns a random legal move for the bot."""
     legal_moves = list(board.legal_moves)
@@ -13,12 +12,12 @@ def play_game():
     while not board.is_game_over():
         print(board)
         
-        if board.turn:  # White's turn (True for White, False for Black)
-            print("White's turn (Bot):")
+        if not board.turn:  # Black's turn (False for Black, True for White)
+            print("Black's turn (Bot):")
             move = random_bot_move(board)
             print(f"Bot chose move: {move.uci()}")
         else:
-            print("Black's turn (Human):")
+            print("White's turn (Human):")
             human_move = input("Enter your move (e.g., e2e4): ")
             move = chess.Move.from_uci(human_move)
             while move not in board.legal_moves:
