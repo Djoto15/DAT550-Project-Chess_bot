@@ -2,11 +2,12 @@ import random
 import chess
 
 class RandomBot():
-    def __init__(self, engine):
+    def __init__(self, engine, color):
         self.moves = None
         self.engine = engine
+        self.color = color
 
-    def get_moves(self, color):
+    def get_moves(self):
         """
         Get the legal moves that the bot can do, if it's its turn.
         """
@@ -18,16 +19,16 @@ class RandomBot():
         #     return legal_moves
         # return []
         moves = self.engine.legal_moves()
-        chess_color = chess.WHITE if color == "white" else chess.BLACK
+        chess_color = chess.WHITE if self.color == "white" else chess.BLACK
         legal_moves = [move for move in moves if self.engine.board.color_at(move.from_square) == chess_color]
         return legal_moves
 
 
-    def play(self, color):
+    def play(self):
         """
         Make the move
         """
-        legal_moves = self.get_moves(color)
+        legal_moves = self.get_moves()
         if legal_moves: # if there is not checkmate
             move = random.choice(legal_moves)
             return move

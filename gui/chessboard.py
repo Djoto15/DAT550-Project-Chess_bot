@@ -37,27 +37,34 @@ class ChessBoard(QWidget):
         self.promotion_widget.piece_selected.connect(self.handle_promotion)
 
         # Game configuration
+        self.initConfig()
+
+
+
+
+    def initConfig(self):
+        """
+        Initialize the game.
+        """
         self.current_turn = "white"
         self.player_color = "white"
+        self.is_player = None
 
-        # Bot integration
-        self.initBot()
-
-
-
-    def initBot(self):
-        """
-        Initialize the bot integration.
-        """
-        self.bot = RandomBot(self.engine)
-
-        self.bot_color = "black"
+        self.white_player = None
+        self.black_player = None
         self.isBot = False
+
+        # Temp attributes
+        self.bot_color = "white"
+
+
+
+    
 
 
     def start_game(self):
         if self.bot_color == "white" and self.isBot:
-            QTimer.singleShot(100, self.play_bot)
+            QTimer.singleShot(100, lambda: self.play_bot(self.bot))
         
 
 
@@ -230,7 +237,7 @@ class ChessBoard(QWidget):
         front_piece = self.front_board[row][col]
 
         # Check if it's two player playing or if there's a bot too
-        if self.player_color == self.current_turn or not self.isBot:    # if there is no Bot, two players game
+        if self.is_player and (self.player_color == self.current_turn or not self.isBot):    # if there is no Bot, two players game
 
             # If clicking on an empty square and a piece is selected, move it
             if front_piece == 0 and len(self.selected_squares) > 0:
@@ -249,7 +256,7 @@ class ChessBoard(QWidget):
                         self.switch_turn()    # Change player's turn
 
                         if self.isBot:
-                            QTimer.singleShot(500, lambda: self.play_bot())
+                            QTimer.singleShot(500, lambda: self.play_bot(self.bot))
                             # self.play_bot()
 
                         # Deselect everything after capturing
@@ -283,7 +290,7 @@ class ChessBoard(QWidget):
                         self.switch_turn()    # Change player's turn
 
                         if self.isBot:
-                            QTimer.singleShot(500, lambda: self.play_bot())
+                            QTimer.singleShot(500, lambda: self.play_bot(self.bot))
                             # self.play_bot()
                         
                         # Deselect everything after capturing
@@ -319,11 +326,11 @@ class ChessBoard(QWidget):
 
 
     # -------- Bot methods --------
-    def play_bot(self):
+    def play_bot(self, bot):
         """
         Make the bot move.
         """
-        chess_move = self.bot.play(self.bot_color) # return the move to do using the python-chess format
+        chess_move = bot.play() # return the move to do using the python-chess format
         if chess_move:
             move_uci = chess_move.uci() # string format like "e2e4" or "e7e8q"
 
@@ -344,6 +351,23 @@ class ChessBoard(QWidget):
 
         else:
             pass
+
+
+    def bots_game(self):
+        """
+        Handle a full game with two bots playing.
+        Alternates between bot moves, starting with the white player.
+        """
+        while not self.engine.is_game_over():
+            # White bot's move
+            if self.current_turn == "white":
+                QTimer.singleShot(500, lambda: self.play_bot(self.white_player))
+                self.update()
+            
+            # Black bot's move
+            elif self.current_turn == "black":
+                QTimer.singleShot(500, lambda: self.play_bot(self.black_player))
+                self.update()
         
 
 
@@ -465,7 +489,7 @@ class ChessBoard(QWidget):
         self.update()
 
         if self.isBot:
-            QTimer.singleShot(500, lambda: self.play_bot())
+            QTimer.singleShot(500, lambda: self.play_bot(self.bot))
             # self.play_bot()
         
 
@@ -511,18 +535,49 @@ class ChessBoard(QWidget):
         self.current_turn = "white"
 
 
-    def config_game(self, is_bot, player_color):
+    def config_game(self, white_player, black_player):
         """
         Configure the game such as:
             - choose is there is a bot or no
             - choose the player's color
         """
-        self.isBot = is_bot
-        self.player_color = player_color
-        self.bot_color = "white" if player_color == "black" else "black"
+        # print(f"White's player: {white_player}")
+        # print(f"Black's player: {black_player}")
 
-        self.reset_game()
-        QTimer.singleShot(500, lambda: self.start_game())
+        # Check if there's two humans, two bots or a human a a bot
+
+        if white_player == "Human" or black_player == "Human":
+            self.is_player = True
+
+            if white_player != "Human" or black_player != "Human":
+                self.isBot = True
+            else:
+                self.isBot = False
+
+        else:
+            self.is_player = False
+            self.isBot = True
+
+        
+
+
+        # Set up the different attributes
+        if self.isBot:
+            bot_color = "white" if white_player != "Human" else "black"
+            self.bot = RandomBot(self.engine, bot_color)
+            self.player_color = "white" if white_player == "Human" else "black"
+
+
+        # Manage if this is two bot playing one against the other
+        if not self.is_player:
+            
+            self.white_player = RandomBot(self.engine, "white") if white_player == "Random bot" else None
+            self.black_player = RandomBot(self.engine, "black") if black_player == "Random bot" else None
+            self.bots_game()
+
+        else:
+            self.reset_game()
+            QTimer.singleShot(500, lambda: self.start_game())
 
 
     def get_fen(self):
