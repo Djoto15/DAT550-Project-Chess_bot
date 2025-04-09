@@ -21,7 +21,7 @@ class ConfigGameDialog(QDialog):
         white_label = QLabel("White:")
         white_label.setAlignment(Qt.AlignCenter)
         self.white_player_combo = QComboBox()
-        self.white_player_combo.addItems(["Human", "RandomBot"])
+        self.white_player_combo.addItems(["Human", "Random bot"])
         white_layout.addWidget(white_label)
         white_layout.addWidget(self.white_player_combo)
 
