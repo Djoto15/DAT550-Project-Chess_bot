@@ -1,89 +1,107 @@
-# A simple chess bot using decision tree and not trained on a database
-
 import chess
-import random
+import chess.pgn
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
 import numpy as np
-from sklearn.tree import DecisionTreeRegressor
 
-class ChessBot:
-    def __init__(self):
-        self.model = DecisionTreeRegressor()
-        self.train_dummy_model()
+# Piece value calculation
+def piece_value(piece):
+    """Return value of a piece."""
+    if piece.piece_type == chess.PAWN:
+        return 1
+    elif piece.piece_type == chess.KNIGHT:
+        return 3
+    elif piece.piece_type == chess.BISHOP:
+        return 3
+    elif piece.piece_type == chess.ROOK:
+        return 5
+    elif piece.piece_type == chess.QUEEN:
+        return 9
+    return 0
 
-    def play(self, board: chess.Board):
-        """Returns the best move based on the trained decision tree."""
-        legal_moves = list(board.legal_moves)
-        if not legal_moves:
-            return None
+# Central control (whether a piece is in the center of the board)
+def is_central(square):
+    """Check if a square is in the center of the board."""
+    return square in [chess.D4, chess.D5, chess.E4, chess.E5]
 
-        best_score = -float('inf')
-        best_move = random.choice(legal_moves)
+# Feature extraction
+def get_features(board):
+    """Generate features from the current chess board."""
+    material_balance = 0
+    central_control = 0
+    piece_activity = 0
+    king_safety = 0
+    
+    # Calculate material balance and central control
+    for square, piece in board.piece_map().items():
+        material_balance += piece_value(piece)
+        if is_central(square):
+            central_control += 1
+    
+    # Count legal moves (piece activity)
+    piece_activity = len(list(board.legal_moves))
+    
+    # Check king safety (whether the king is in check)
+    king_safety = 1 if board.is_check() else 0
+    
+    # Return features (in a list)
+    return [material_balance, central_control, piece_activity, king_safety]
 
-        for move in legal_moves:
-            board.push(move)
-            features = self.extract_features(board)
-            score = self.model.predict([features])[0]
-            board.pop()
+# Load chess games from a PGN file
+def load_games(pgn_file):
+    """Load games from a PGN file."""
+    games = []
+    with open(pgn_file, 'r') as f:
+        game = chess.pgn.read_game(f)
+        while game:
+            games.append(game)
+            game = chess.pgn.read_game(f)
+    return games
 
-            if score > best_score:
-                best_score = score
-                best_move = move
+# Generate features and labels from games
+def generate_data(games):
+    """Generate training data (features and labels) from chess games."""
+    data = []
+    labels = []
+    for game in games:
+        board = game.board()
+        for move in game.mainline_moves():
+            features = get_features(board)
+            data.append(features)
+            labels.append(move.uci())  # Best move as label
+            board.push(move)  # Update the board after the move
+    return data, labels
 
-        return best_move
+# Train decision tree and predict the best move
+def train_and_predict(pgn_file):
+    """Train a decision tree and predict the best move for a given board."""
+    # Load and process games
+    games = load_games(pgn_file)
+    data, labels = generate_data(games)
 
-    def extract_features(self, board: chess.Board):
-        """Extracts features from the board: material balance and turn."""
-        piece_values = {
-            chess.PAWN: 1,
-            chess.KNIGHT: 3,
-            chess.BISHOP: 3,
-            chess.ROOK: 5,
-            chess.QUEEN: 9,
-            chess.KING: 0  # King has no material value for this simple model
-        }
+    # Split into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.2, random_state=42)
 
-        white_material = sum(
-            len(board.pieces(piece_type, chess.WHITE)) * value
-            for piece_type, value in piece_values.items()
-        )
+    # Train a decision tree classifier
+    clf = DecisionTreeClassifier(random_state=42)
+    clf.fit(X_train, y_train)
 
-        black_material = sum(
-            len(board.pieces(piece_type, chess.BLACK)) * value
-            for piece_type, value in piece_values.items()
-        )
+    # Evaluate the classifier
+    print(f"Accuracy on test set: {clf.score(X_test, y_test):.4f}")
 
-        material_balance = white_material - black_material
-        turn = 1 if board.turn == chess.WHITE else 0
+    # Predict the best move for the current board
+    board = chess.Board()  # Starting from the initial board position
+    features = get_features(board)
+    predicted_move_uci = clf.predict([features])[0]
+    predicted_move = chess.Move.from_uci(predicted_move_uci)
+    print(f"Predicted move for the initial board: {predicted_move}")
 
-        return np.array([material_balance, turn])
+    return clf
 
-    def train_dummy_model(self):
-        """Trains the decision tree on random positions using material balance as label."""
-        X = []
-        y = []
-
-        for _ in range(500):  # Generate 500 training samples
-            board = chess.Board()
-            for _ in range(random.randint(0, 20)):  # Play a few random moves
-                if board.is_game_over():
-                    break
-                legal = list(board.legal_moves)
-                board.push(random.choice(legal))
-
-            features = self.extract_features(board)
-            label = features[0]  # Label = material balance
-            X.append(features)
-            y.append(label)
-
-        self.model.fit(X, y)
-
-# Example usage (play a single move)
+# Main function
 if __name__ == "__main__":
-    board = chess.Board()
-    bot = ChessBot()
+    # Specify the PGN file containing the chess games
+    pgn_file = "chess_games.pgn"  # Replace with the actual path to your PGN file
 
-    print("Current board:")
-    print(board)
-
-    move = bot.play(board)
-    print(f"\nBot chooses move: {move}")
+    # Train the model and predict a move
+    clf = train_and_predict(pgn_file)
