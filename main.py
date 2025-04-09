@@ -17,6 +17,7 @@ def main():
 
     window = MainWindow(engine, link)
     window.show()
+    window.config_game()
 
     app.exec_()
 

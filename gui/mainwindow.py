@@ -19,7 +19,8 @@ class MainWindow(QMainWindow):
     def __init__(self, engine, link):
         super().__init__()
         self.setWindowTitle("Chess")
-        self.setGeometry(700, 300, 1200, 1000)
+        # self.setGeometry(700, 300, 1200, 1000)
+        self.setGeometry(700, 300, 840, 880)
         self.set_dark_mode()
 
 
@@ -30,6 +31,7 @@ class MainWindow(QMainWindow):
         self.initMenu()
 
         self.chessboard.start_game()
+        
 
 
     
@@ -45,7 +47,8 @@ class MainWindow(QMainWindow):
 
         # Create the chessboard widget and set its parent to central_widget
         self.chessboard = ChessBoard(engine, link, self.central_widget)
-        self.chessboard.move(20, 80)  # Position it manually
+        # self.chessboard.move(20, 80)  # Position it manually
+        self.chessboard.move(20, 20)
 
 
     def initMenu(self):
@@ -94,8 +97,8 @@ class MainWindow(QMainWindow):
     def config_game(self):
         dialog = ConfigGameDialog(self)
         if dialog.exec_() == QDialog.Accepted:
-            is_bot, player_color = dialog.get_settings()
-            self.chessboard.config_game(is_bot, player_color)
+            white_player, black_player = dialog.get_settings()
+            self.chessboard.config_game(white_player, black_player)
 
     def get_fen(self):
         self.chessboard.get_fen()

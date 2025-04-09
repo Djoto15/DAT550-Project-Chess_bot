@@ -1,6 +1,5 @@
 from PyQt5.QtWidgets import (
-    QDialog, QVBoxLayout, QLabel, QRadioButton,
-    QPushButton, QButtonGroup, QDialogButtonBox
+    QDialog, QVBoxLayout, QLabel, QComboBox, QDialogButtonBox, QHBoxLayout, QWidget
 )
 from PyQt5.QtCore import Qt
 
@@ -9,43 +8,47 @@ class ConfigGameDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Configure Game")
-        self.setFixedSize(300, 200)
+        self.setFixedSize(350, 150)
 
-        layout = QVBoxLayout(self)
+        main_layout = QVBoxLayout(self)
 
-        # Bot choice
-        layout.addWidget(QLabel("Play against bot?"))
-        self.bot_group = QButtonGroup(self)
-        bot_yes = QRadioButton("Yes")
-        bot_no = QRadioButton("No")
-        bot_yes.setChecked(True)
+        # Horizontal layout for White and Black selectors
+        player_layout = QHBoxLayout()
 
-        self.bot_group.addButton(bot_yes, id=1)
-        self.bot_group.addButton(bot_no, id=0)
+        # White side group
+        white_widget = QWidget()
+        white_layout = QVBoxLayout(white_widget)
+        white_label = QLabel("White:")
+        white_label.setAlignment(Qt.AlignCenter)
+        self.white_player_combo = QComboBox()
+        self.white_player_combo.addItems(["Human", "Random bot"])
+        white_layout.addWidget(white_label)
+        white_layout.addWidget(self.white_player_combo)
 
-        layout.addWidget(bot_yes)
-        layout.addWidget(bot_no)
+        # Black side group
+        black_widget = QWidget()
+        black_layout = QVBoxLayout(black_widget)
+        black_label = QLabel("Black:")
+        black_label.setAlignment(Qt.AlignCenter)
+        self.black_player_combo = QComboBox()
+        self.black_player_combo.addItems(["Human", "Random bot"])
+        black_layout.addWidget(black_label)
+        black_layout.addWidget(self.black_player_combo)
 
-        # Color choice
-        layout.addWidget(QLabel("Choose your color:"))
-        self.color_group = QButtonGroup(self)
-        white = QRadioButton("White")
-        black = QRadioButton("Black")
-        white.setChecked(True)
+        # Add both widgets side by side
+        player_layout.addWidget(white_widget)
+        player_layout.addWidget(black_widget)
 
-        self.color_group.addButton(white, id=1)
-        self.color_group.addButton(black, id=0)
+        # Add to main layout
+        main_layout.addLayout(player_layout)
 
-        layout.addWidget(white)
-        layout.addWidget(black)
-
-        # Dialog buttons (OK / Cancel)
+        # OK / Cancel buttons
         self.buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         self.buttons.accepted.connect(self.accept)
         self.buttons.rejected.connect(self.reject)
-        layout.addWidget(self.buttons)
+        main_layout.addWidget(self.buttons)
 
     def get_settings(self):
-        is_bot = self.bot_group.checkedId() == 1
-        player_color = "white" if self.color_group.checkedId() == 1 else "black"
-        return is_bot, player_color
+        white_player = self.white_player_combo.currentText()
+        black_player = self.black_player_combo.currentText()
+        return white_player, black_player
