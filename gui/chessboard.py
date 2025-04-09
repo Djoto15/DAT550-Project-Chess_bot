@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QLabel, QAction, QVBoxLayout, QPushButton
+from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QLabel, QAction, QVBoxLayout, QPushButton, QMessageBox
 from PyQt5.QtGui import QPalette, QColor, QPainter, QPainterPath, QPixmap
 from PyQt5.QtCore import Qt, QPropertyAnimation, QPoint, pyqtSignal, QTimer
 
@@ -8,8 +8,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import math
 
-from gui.variables import PIECE_IMAGES, WHITE, GREEN, YELLOW, SQUARE_SIZE
+from gui.variables import PIECE_IMAGES, WHITE, GREEN, YELLOW, SQUARE_SIZE, RED
 from gui.promotion import PromotionWidget
+from gui.game_over import GameOverPopup
 from bot import RandomBot
 
 
@@ -27,6 +28,7 @@ class ChessBoard(QWidget):
         self.highlighted_square = []     # to keep track of the square for highlighting
         self.legal_moves = []            # keep track of the possible moves for selected pieces
         self.selected_squares = []       # keep track of all selected squares
+        self.king_position = None
 
         self.promotion_widget = PromotionWidget(self)
         self.promotion = None            # keep track of the prev_pos and new_pose for the promotion
@@ -34,8 +36,13 @@ class ChessBoard(QWidget):
         # Connect the piece_selected signal to a method in this class
         self.promotion_widget.piece_selected.connect(self.handle_promotion)
 
+        # Game configuration
+        self.current_turn = "white"
+        self.player_color = "white"
+
         # Bot integration
         self.initBot()
+
 
 
     def initBot(self):
@@ -44,10 +51,13 @@ class ChessBoard(QWidget):
         """
         self.bot = RandomBot(self.engine)
 
-        self.current_turn = "white"
         self.bot_color = "black"
-        self.player_color = "white"
         self.isBot = False
+
+
+    def start_game(self):
+        if self.bot_color == "white" and self.isBot:
+            QTimer.singleShot(100, self.play_bot)
         
 
 
@@ -68,6 +78,9 @@ class ChessBoard(QWidget):
 
         if len(self.selected_squares) > 0:
             self.draw_possible_moves(painter, self.selected_squares[-1])
+
+        if self.is_check():
+            self.highlight_check(painter)
 
 
         self.draw_pieces(painter, self.front_board)     # Draws the pieces (needs to be second to last)
@@ -182,6 +195,29 @@ class ChessBoard(QWidget):
                 painter.drawEllipse(int(center_x - radius), int(center_y - radius), int(radius * 2), int(radius * 2))
 
 
+    def highlight_check(self, painter):
+        """
+        Highlight the kings position if there's a check
+        """
+        
+
+        # Set the color for highlighting (e.g., a light yellow)
+        highlight_color = QColor(RED)
+        painter.setBrush(highlight_color)
+        painter.setPen(Qt.NoPen)
+
+        # Draw the highlight on the square
+        row, col = self.king_position
+        painter.drawRect(int(col * SQUARE_SIZE), int(row * SQUARE_SIZE), SQUARE_SIZE, SQUARE_SIZE)
+
+
+
+
+    # -------- Help methods --------
+
+    def switch_turn(self):
+        self.current_turn = "black" if self.current_turn == "white" else "white"
+
 
 
     # -------- Mouse event methods --------
@@ -210,7 +246,7 @@ class ChessBoard(QWidget):
                         self.move_piece(prev_front_piece, prev_square, square_pos)   # move the piece in the front_board
 
                         
-                        self.current_turn = "black" if self.current_turn == "white" else "white"    # Change player's turn
+                        self.switch_turn()    # Change player's turn
 
                         if self.isBot:
                             QTimer.singleShot(500, lambda: self.play_bot())
@@ -220,8 +256,12 @@ class ChessBoard(QWidget):
                         self.selected_squares = []
                         self.highlighted_square = []
                         self.moves = []
-                        
+
                         self.update()
+
+                        # Check if the game is over
+                        self.is_game_over()
+
                         return
 
             # If clicking on an opponent's piece that can be captured        
@@ -240,7 +280,7 @@ class ChessBoard(QWidget):
                         self.move_piece(prev_front_piece, prev_square, square_pos)
 
                         
-                        self.current_turn = "black" if self.current_turn == "white" else "white"    # Change player's turn
+                        self.switch_turn()    # Change player's turn
 
                         if self.isBot:
                             QTimer.singleShot(500, lambda: self.play_bot())
@@ -250,13 +290,13 @@ class ChessBoard(QWidget):
                         self.selected_squares = []
                         self.highlighted_square = []
                         self.moves = []
-
+                        
                         self.update()
+
+                        # Check if the game is over
+                        self.is_game_over()
+
                         return
-            
-            if front_piece != 0:
-                self.highlighted_square.append(square_pos)
-                self.selected_squares.append(square_pos)
 
 
             # Square processing
@@ -268,9 +308,13 @@ class ChessBoard(QWidget):
 
         else:
             pass
+            # if the bot plays white, need to configure that further
 
         
         self.update()   # call the paintEvent method to redraw the board
+
+        # Check if the game is over
+        self.is_game_over()
         
 
 
@@ -279,7 +323,7 @@ class ChessBoard(QWidget):
         """
         Make the bot move.
         """
-        chess_move = self.bot.play() # return the move to do using the python-chess format
+        chess_move = self.bot.play(self.bot_color) # return the move to do using the python-chess format
         if chess_move:
             move_uci = chess_move.uci() # string format like "e2e4" or "e7e8q"
 
@@ -294,11 +338,12 @@ class ChessBoard(QWidget):
                 self.move_piece(piece, prev_pos, new_pos)
             else:
                 self.engine.move_piece(move_uci)
+                self.read_board()
 
-            self.current_turn = "black" if self.current_turn == "white" else "white"    # Change player's turn
+            self.switch_turn()    # Change player's turn
 
         else:
-            print("Checkmate !")
+            pass
         
 
 
@@ -320,6 +365,7 @@ class ChessBoard(QWidget):
         Move piece to the new_pos.
         """
         if piece == 'p' and new_pos[0] == 7 or piece == 'P' and new_pos[0] == 0:    # when there's a promotion
+            self.promotion_pending = True
             self.promotion = [prev_pos, new_pos]
             self.pawn_promotion(new_pos)
 
@@ -356,7 +402,7 @@ class ChessBoard(QWidget):
         distance = math.sqrt((new_pos_x - x_pos) ** 2 + (new_pos_y - y_pos) ** 2)
 
         # Duration of the animation depends on the distance
-        duration = int(distance * 0.8)
+        duration = int(distance * 0.6)
 
         # Set up the animation for smooth piece movement
         self.animation = QPropertyAnimation(self.piece_label, b"pos")
@@ -417,6 +463,10 @@ class ChessBoard(QWidget):
         self.back_front.move_piece(self.engine, prev_pos, new_pos, param = selected_piece)
         self.read_board()
         self.update()
+
+        if self.isBot:
+            QTimer.singleShot(500, lambda: self.play_bot())
+            # self.play_bot()
         
 
 
@@ -429,17 +479,29 @@ class ChessBoard(QWidget):
         self.engine.set_fen(fen)
         self.read_board()
         self.update()
+
         self.selected_squares = []
         self.highlighted_square = []
         self.legal_moves = []
+
         self.current_turn = "white"
+
+        self.engine.checkmate = False
+        self.engine.stalemate = False
+        self.engine.insufficient_material = False
+        self.engine.game_over = False
+        
+        self.start_game()
 
     
     def set_game(self):
         """
         Set the board to a specific position for debbuging.
         """
-        custom_fen = "8/1P6/8/8/8/8/8/8 w - - 0 1"  # pawn promotion
+        # custom_fen = "8/1P6/8/8/8/8/8/8 w - - 0 1"                                # pawn promotion
+        # custom_fen = "1r3Q1r/p3p3/k3p3/2Q1p3/8/2N5/PPPP2P1/R1B2K2 b - - 0 23"
+        # custom_fen = "8/6K1/Q7/8/8/8/2p2k2/8"
+        custom_fen = "r1bqkbnr/pp1p1ppp/n1p5/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 0 4"
         self.engine.set_fen(custom_fen)
         self.read_board()
         self.update()
@@ -449,8 +511,73 @@ class ChessBoard(QWidget):
         self.current_turn = "white"
 
 
-    def set_bot(self):
+    def config_game(self, is_bot, player_color):
         """
-        Tell that we use a bot
+        Configure the game such as:
+            - choose is there is a bot or no
+            - choose the player's color
         """
-        self.isBot = True
+        self.isBot = is_bot
+        self.player_color = player_color
+        self.bot_color = "white" if player_color == "black" else "black"
+
+        self.reset_game()
+        QTimer.singleShot(500, lambda: self.start_game())
+
+
+    def get_fen(self):
+        """
+        Get the fen representation of the board.
+        """
+        fen = self.engine.get_fen()
+        print(fen)
+
+
+    # -------- Game state methods --------
+
+    def is_check(self):
+        """
+        Check if the board is in check state.
+        """
+        look_king = "k" if self.current_turn == "black" else "K"
+
+        for i in range(8):
+            for j in range(8):
+                if self.front_board[i][j] == look_king:
+                    self.king_position = (i, j)
+
+        return self.engine.is_check()
+
+    def is_game_over(self):
+        """
+        Check if the game is over.
+        Pops a QMessage Box to indicate what win and who win.
+        """
+        if self.engine.game_over:
+            if self.engine.checkmate:
+                status = "checkmate"
+            elif self.engine.stalemate:
+                status = "stalemate"
+            elif self.engine.insufficient_material:
+                status = "insufficient material"
+            else:
+                status = None
+
+            winner = "White" if self.current_turn == "black" else "Black"
+            
+            self.show_game_over_message(status, winner, self)
+
+
+    def show_game_over_message(self, status, winner=None, parent=None):
+        if status == "checkmate":
+            message = f"Checkmate! {winner} wins."
+        elif status == "stalemate":
+            message = "Stalemate. It's a draw."
+        elif status == "insufficient_material":
+            message = "Draw due to insufficient material."
+        else:
+            message = "Game over."
+
+        popup = GameOverPopup(message, parent)
+
+        popup.show()
