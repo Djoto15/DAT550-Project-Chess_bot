@@ -225,6 +225,9 @@ class ChessBoard(QWidget):
     def switch_turn(self):
         self.current_turn = "black" if self.current_turn == "white" else "white"
 
+    def refresh(self):
+        QTimer.singleShot(100, lambda: self.update())
+
 
 
     # -------- Mouse event methods --------
@@ -264,7 +267,7 @@ class ChessBoard(QWidget):
                         self.highlighted_square = []
                         self.moves = []
 
-                        self.update()
+                        self.refresh()
 
                         # Check if the game is over
                         self.is_game_over()
@@ -298,7 +301,7 @@ class ChessBoard(QWidget):
                         self.highlighted_square = []
                         self.moves = []
                         
-                        self.update()
+                        self.refresh()
 
                         # Check if the game is over
                         self.is_game_over()
@@ -318,7 +321,7 @@ class ChessBoard(QWidget):
             # if the bot plays white, need to configure that further
 
         
-        self.update()   # call the paintEvent method to redraw the board
+        self.refresh()   # call the paintEvent method to redraw the board
 
         # Check if the game is over
         self.is_game_over()
@@ -339,7 +342,7 @@ class ChessBoard(QWidget):
             new_pos = self.back_front.cases[move_uci[2:4]]
             piece = self.front_board[prev_pos[0]][prev_pos[1]]
             self.front_board[prev_pos[0]][prev_pos[1]] = 0
-            self.update()
+            self.refresh()
 
             if len(move_uci) < 5:   # if not a pawn promotion
                 self.move_piece(piece, prev_pos, new_pos)
@@ -355,19 +358,33 @@ class ChessBoard(QWidget):
 
     def bots_game(self):
         """
-        Handle a full game with two bots playing.
-        Alternates between bot moves, starting with the white player.
+        Handle a full game with two bots playing, alternating between them with a delay.
         """
-        while not self.engine.is_game_over():
-            # White bot's move
+        # We want to control when to call play_bot using a QTimer
+        def play_next_turn():
             if self.current_turn == "white":
-                QTimer.singleShot(500, lambda: self.play_bot(self.white_player))
-                self.update()
+                # print(f"White's turn: {self.current_turn}")
+                self.play_bot(self.white_player)  # Make White's move
+                self.refresh()
+                # print(f"Turn after White: {self.current_turn}")
             
-            # Black bot's move
             elif self.current_turn == "black":
-                QTimer.singleShot(500, lambda: self.play_bot(self.black_player))
-                self.update()
+                # print(f"Black's turn: {self.current_turn}")
+                self.play_bot(self.black_player)  # Make Black's move
+                self.refresh()
+                # print(f"Turn after Black: {self.current_turn}")
+            
+            # Set up the next turn after a delay (500ms) 
+            if not self.engine.is_game_over():  # Check if the game is over
+                QTimer.singleShot(500, play_next_turn)  # Delay before the next move
+            else:
+                self.is_game_over()
+
+        # Start the first move with a delay
+        QTimer.singleShot(500, play_next_turn)
+
+
+
         
 
 
@@ -449,7 +466,7 @@ class ChessBoard(QWidget):
         self.front_board[new_pos[0]][new_pos[1]] = piece
         self.piece_label.deleteLater()
         self.read_board()
-        self.update()
+        self.refresh()
 
 
     # -------- Reading methods --------
@@ -486,7 +503,7 @@ class ChessBoard(QWidget):
         prev_pos, new_pos = self.promotion
         self.back_front.move_piece(self.engine, prev_pos, new_pos, param = selected_piece)
         self.read_board()
-        self.update()
+        self.refresh()
 
         if self.isBot:
             QTimer.singleShot(500, lambda: self.play_bot(self.bot))
@@ -502,7 +519,7 @@ class ChessBoard(QWidget):
         fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
         self.engine.set_fen(fen)
         self.read_board()
-        self.update()
+        self.refresh()
 
         self.selected_squares = []
         self.highlighted_square = []
@@ -528,7 +545,7 @@ class ChessBoard(QWidget):
         custom_fen = "r1bqkbnr/pp1p1ppp/n1p5/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 0 4"
         self.engine.set_fen(custom_fen)
         self.read_board()
-        self.update()
+        self.refresh()
         self.selected_squares = []
         self.highlighted_square = []
         self.legal_moves = []
