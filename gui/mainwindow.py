@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QLabel, QAction, QVBoxLayout, QPushButton
+from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QLabel, QAction, QVBoxLayout, QPushButton, QDialog
 from PyQt5.QtGui import QPalette, QColor, QPainter, QPainterPath, QPixmap
 from PyQt5.QtCore import Qt, QPropertyAnimation, QPoint, pyqtSignal
 
@@ -10,6 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from gui.variables import PIECE_IMAGES, WHITE, GREEN, YELLOW, SQUARE_SIZE
 
 from gui.chessboard import ChessBoard
+from gui.config_game import ConfigGameDialog
 
 
 
@@ -27,6 +28,8 @@ class MainWindow(QMainWindow):
         self.engine = engine
 
         self.initMenu()
+
+        self.chessboard.start_game()
 
 
     
@@ -48,6 +51,7 @@ class MainWindow(QMainWindow):
     def initMenu(self):
         self.Menu = self.menuBar()
         GameMenu = self.Menu.addMenu("Game")
+        ToolMenu = self.Menu.addMenu("Tools")
 
         quit_action = QAction("Quit", self)
         quit_action.setShortcut("Ctrl+Q")
@@ -59,10 +63,21 @@ class MainWindow(QMainWindow):
         new_game.triggered.connect(self.new_game)
         GameMenu.addAction(new_game)
 
+        config = QAction("Config game", self)
+        config.setShortcut("Ctrl+C")
+        config.triggered.connect(self.config_game)
+        GameMenu.addAction(config)
+
+
         set_game = QAction("Debbug game", self)
-        set_game.setShortcut("Ctrl+G")
+        set_game.setShortcut("Ctrl+D")
         set_game.triggered.connect(self.set_game)
-        GameMenu.addAction(set_game)
+        ToolMenu.addAction(set_game)
+
+        get_fen = QAction("Get fen", self)
+        get_fen.setShortcut("Ctrl+G")
+        get_fen.triggered.connect(self.get_fen)
+        ToolMenu.addAction(get_fen)
 
 
     # -------- Action methods --------
@@ -75,6 +90,15 @@ class MainWindow(QMainWindow):
 
     def set_game(self):
         self.chessboard.set_game()
+
+    def config_game(self):
+        dialog = ConfigGameDialog(self)
+        if dialog.exec_() == QDialog.Accepted:
+            is_bot, player_color = dialog.get_settings()
+            self.chessboard.config_game(is_bot, player_color)
+
+    def get_fen(self):
+        self.chessboard.get_fen()
         
 
         
