@@ -15,6 +15,7 @@ from gui.game_over import GameOverPopup
 # Bot import
 from bot import RandomBot
 from bot import TreeBot
+from bot import Training
 
 
 class ChessBoard(QWidget):
@@ -41,6 +42,7 @@ class ChessBoard(QWidget):
 
         # Game configuration
         self.initConfig()
+        self.initTraining()
 
 
 
@@ -61,8 +63,23 @@ class ChessBoard(QWidget):
         self.bot_color = "white"
 
 
+    def initTraining(self):
+        """
+        Initialize the training of the bots.
+        """
+        # Add the layout for the chessboard and other elements
+        self.layout = QVBoxLayout(self)
+        
+        # Your ChessBoard initialization logic goes here
 
-    
+        # Placeholder for the bot training UI
+        self.training_label = QLabel("Training bots...")
+        self.training_label.setAlignment(Qt.AlignCenter)
+        self.training_label.setStyleSheet("font-size: 16px; color: blue;")
+        self.layout.addWidget(self.training_label)
+        self.training_label.hide()
+
+
 
 
     def start_game(self):
@@ -389,6 +406,25 @@ class ChessBoard(QWidget):
         QTimer.singleShot(500, play_next_turn)
 
 
+    def start_training(self, pgn_path):
+        """ Method to start the training phase """
+        def on_training_complete():
+            """ Callback method when training is complete """
+            
+            # Hide the training label once done
+            self.training_label.hide()
+
+            # Any other logic to handle after training completion
+            print("Training completed!")
+        
+        # Show the training label
+        self.training_label.show()
+
+        # Initialize and start training
+        self.training = Training(self.white_player, self.black_player, pgn_path, self, on_training_complete)
+        self.training.train()
+
+    
 
         
 
@@ -601,7 +637,7 @@ class ChessBoard(QWidget):
                 self.white_player = RandomBot(self.engine, "white")
             elif white_player == "Tree bot":
                 self.white_player = TreeBot(self.engine)
-                self.white_player.fit("data/1800thresh_1448.pgn")
+                # self.white_player.fit("data/1800thresh_1448.pgn")
             else:
                 self.white_player = None
 
@@ -610,12 +646,19 @@ class ChessBoard(QWidget):
                 self.black_player = RandomBot(self.engine, "black")
             elif white_player == "Tree bot":
                 self.black_player = TreeBot(self.engine)
-                self.black_player.fit("data/1800thresh_1448.pgn")
+                # self.black_player.fit("data/1800thresh_1448.pgn")
             else:
                 self.black_player = None
+
+            # Start the training phase
+            if white_player != "Random bot" and black_player != "Random bot":
+                print("Started training.")
+                self.start_training(pgn_path="data/1800thresh_1448.pgn")
+            else:
+                self.bots_game()
             
             
-            self.bots_game()
+            # self.bots_game()
 
         else:
             self.reset_game()
@@ -628,6 +671,14 @@ class ChessBoard(QWidget):
         """
         fen = self.engine.get_fen()
         print(fen)
+
+
+    def launch_game(self):
+        """
+        Launch the game if this is two bots playing against each other.
+        """
+        if not self.is_player:
+            self.bots_game()
 
 
     # -------- Game state methods --------

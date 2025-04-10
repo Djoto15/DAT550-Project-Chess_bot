@@ -11,7 +11,17 @@ class TreeBot:
         self.engine = engine
 
     def extract_features(self, board):
-        """Extract simple features like material balance."""
+        """
+        Extract rich features from the current board position.
+
+        - Material Balance: as before.
+        - King Safety: count how many pieces (including pawns) are near the king (3x3 grid).
+        - Center Control: count how many pieces control or occupy central squares (d4, e4, d5, e5).
+        - Mobility: number of legal moves (helps estimate initiative).
+        - Pawn Structure: number of isolated pawns.
+        - Piece Development: how many minor pieces (knights/bishops) are off their initial squares.
+        
+        """
         piece_values = {
             chess.PAWN: 1,
             chess.KNIGHT: 3,
@@ -20,14 +30,90 @@ class TreeBot:
             chess.QUEEN: 9,
         }
 
+        # 1. Material balance
         white_material = 0
         black_material = 0
-
         for piece_type in piece_values:
             white_material += len(board.pieces(piece_type, chess.WHITE)) * piece_values[piece_type]
             black_material += len(board.pieces(piece_type, chess.BLACK)) * piece_values[piece_type]
+        material_balance = white_material - black_material
 
-        return [white_material - black_material]  # You can add more features later
+        # 2. King safety (pieces around the king in 3x3 grid)
+        def king_safety(board, color):
+            king_square = board.king(color)
+            if king_square is None:
+                return 0  # checkmate / invalid board
+            safety_score = 0
+            for dx in [-1, 0, 1]:
+                for dy in [-1, 0, 1]:
+                    if dx == 0 and dy == 0:
+                        continue
+                    neighbor = king_square + dx + 8 * dy
+                    if chess.SQUARES[0] <= neighbor <= chess.SQUARES[-1]:
+                        piece = board.piece_at(neighbor)
+                        if piece and piece.color == color:
+                            safety_score += 1
+            return safety_score
+
+        white_king_safety = king_safety(board, chess.WHITE)
+        black_king_safety = king_safety(board, chess.BLACK)
+
+        # 3. Center control (d4, e4, d5, e5)
+        center_squares = [chess.D4, chess.E4, chess.D5, chess.E5]
+        white_center = 0
+        black_center = 0
+        for square in center_squares:
+            attackers_white = board.attackers(chess.WHITE, square)
+            attackers_black = board.attackers(chess.BLACK, square)
+            white_center += len(attackers_white)
+            black_center += len(attackers_black)
+
+        # 4. Mobility (number of legal moves)
+        board_turn = board.turn
+        board_legal_moves = len(list(board.legal_moves))
+
+        # 5. Isolated pawns
+        def count_isolated_pawns(board, color):
+            pawns = board.pieces(chess.PAWN, color)
+            files_with_pawns = [chess.square_file(sq) for sq in pawns]
+            isolated = 0
+            for sq in pawns:
+                file = chess.square_file(sq)
+                if (file - 1 not in files_with_pawns) and (file + 1 not in files_with_pawns):
+                    isolated += 1
+            return isolated
+
+        white_isolated = count_isolated_pawns(board, chess.WHITE)
+        black_isolated = count_isolated_pawns(board, chess.BLACK)
+
+        # 6. Development (minor pieces off their starting squares)
+        def minor_development(board, color):
+            developed = 0
+            starting_squares = {
+                chess.WHITE: [chess.B1, chess.G1, chess.C1, chess.F1],
+                chess.BLACK: [chess.B8, chess.G8, chess.C8, chess.F8],
+            }
+            for sq in starting_squares[color]:
+                piece = board.piece_at(sq)
+                if not piece or piece.piece_type not in (chess.KNIGHT, chess.BISHOP):
+                    developed += 1
+            return developed
+
+        white_dev = minor_development(board, chess.WHITE)
+        black_dev = minor_development(board, chess.BLACK)
+
+        # Combine features into a single vector
+        features = [
+            material_balance,
+            white_king_safety - black_king_safety,
+            white_center - black_center,
+            board_legal_moves if board_turn == chess.WHITE else -board_legal_moves,
+            white_isolated - black_isolated,
+            white_dev - black_dev,
+        ]
+
+        return features
+
 
     def fit(self, pgn_path):
         """Train the decision tree on the PGN games."""
