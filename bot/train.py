@@ -1,7 +1,6 @@
 # A file to define a training class for the bots
 
-from PyQt5.QtCore import QObject, QThread, pyqtSignal, Qt
-from PyQt5.QtWidgets import QLabel
+from PyQt5.QtCore import QObject, QThread, pyqtSignal
 
 class BotTrainer(QObject):
     finished = pyqtSignal()

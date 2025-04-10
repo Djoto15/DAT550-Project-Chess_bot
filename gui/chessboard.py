@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QLabel, QAction, QVBoxLayout, QPushButton, QMessageBox
+from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QLabel, QAction, QVBoxLayout, QDialog, QSpacerItem, QSizePolicy
 from PyQt5.QtGui import QPalette, QColor, QPainter, QPainterPath, QPixmap
 from PyQt5.QtCore import Qt, QPropertyAnimation, QPoint, pyqtSignal, QTimer
 
@@ -63,28 +63,40 @@ class ChessBoard(QWidget):
         self.bot_color = "white"
 
 
+
     def initTraining(self):
         """
-        Initialize the training of the bots.
+        Initialize the training of the bots with a custom widget displaying the training status.
         """
-        # Add the layout for the chessboard and other elements
-        self.layout = QVBoxLayout(self)
-        
-        # Your ChessBoard initialization logic goes here
+        # Create a widget for the training message
+        self.training_widget = QWidget(self)
+        self.training_widget.setStyleSheet(
+            """
+            background-color: #54575c;
+            border-radius: 10px;
+            padding: 10px;
+            """
+        )
 
-        # Placeholder for the bot training UI
-        self.training_label = QLabel("Training bots...")
+        # Create the label for the message
+        self.training_label = QLabel("Training bots...", self)
         self.training_label.setAlignment(Qt.AlignCenter)
-        self.training_label.setStyleSheet("font-size: 16px; color: blue;")
+        self.training_label.setStyleSheet("font-size: 24px; color: white;")
+        
+        # Create a layout for the training widget (center the label)
+        self.layout = QVBoxLayout(self.training_widget)
         self.layout.addWidget(self.training_label)
-        self.training_label.hide()
+        
+        # Create a layout for the ChessBoard to center the training widget
+        main_layout = QVBoxLayout(self)  # Assuming self is a QWidget (ChessBoard)
+        main_layout.setAlignment(Qt.AlignCenter)  # Align child widgets to center
+        main_layout.addWidget(self.training_widget)
+        
+        # Hide the widget initially
+        self.training_widget.hide()
 
 
 
-
-    def start_game(self):
-        if self.bot_color == "white" and self.isBot:
-            QTimer.singleShot(100, lambda: self.play_bot(self.bot))
         
 
 
@@ -247,6 +259,10 @@ class ChessBoard(QWidget):
 
     def refresh(self):
         QTimer.singleShot(100, lambda: self.update())
+
+    def start_game(self):
+        if self.bot_color == "white" and self.isBot:
+            QTimer.singleShot(100, lambda: self.play_bot(self.bot))
 
 
 
@@ -411,18 +427,19 @@ class ChessBoard(QWidget):
         def on_training_complete():
             """ Callback method when training is complete """
             
-            # Hide the training label once done
-            self.training_label.hide()
+            # Hide the training widget once done
+            self.training_widget.hide()
 
             # Any other logic to handle after training completion
             print("Training completed!")
-        
-        # Show the training label
-        self.training_label.show()
+
+        # Show the training widget
+        self.training_widget.show()
 
         # Initialize and start training
         self.training = Training(self.white_player, self.black_player, pgn_path, self, on_training_complete)
         self.training.train()
+
 
     
 
