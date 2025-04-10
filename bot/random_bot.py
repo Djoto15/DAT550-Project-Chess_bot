@@ -22,6 +22,10 @@ class RandomBot():
         chess_color = chess.WHITE if self.color == "white" else chess.BLACK
         legal_moves = [move for move in moves if self.engine.board.color_at(move.from_square) == chess_color]
         return legal_moves
+    
+    def fit(self):
+        """Just do nothing but debbug."""
+        pass
 
 
     def predict(self):
