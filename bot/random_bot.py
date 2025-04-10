@@ -24,7 +24,7 @@ class RandomBot():
         return legal_moves
 
 
-    def play(self):
+    def predict(self):
         """
         Make the move
         """

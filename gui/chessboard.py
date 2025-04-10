@@ -11,7 +11,10 @@ import math
 from gui.variables import PIECE_IMAGES, WHITE, GREEN, YELLOW, SQUARE_SIZE, RED
 from gui.promotion import PromotionWidget
 from gui.game_over import GameOverPopup
+
+# Bot import
 from bot import RandomBot
+from bot import TreeBot
 
 
 class ChessBoard(QWidget):
@@ -333,8 +336,9 @@ class ChessBoard(QWidget):
         """
         Make the bot move.
         """
-        chess_move = bot.play() # return the move to do using the python-chess format
+        chess_move = bot.predict() # return the move to do using the python-chess format
         if chess_move:
+            # print("there's a move")
             move_uci = chess_move.uci() # string format like "e2e4" or "e7e8q"
 
             # Transform the move format for the gui
@@ -362,6 +366,7 @@ class ChessBoard(QWidget):
         """
         # We want to control when to call play_bot using a QTimer
         def play_next_turn():
+            # print("next turn")
             if self.current_turn == "white":
                 # print(f"White's turn: {self.current_turn}")
                 self.play_bot(self.white_player)  # Make White's move
@@ -582,14 +587,34 @@ class ChessBoard(QWidget):
         if self.isBot:
             bot_color = "white" if white_player != "Human" else "black"
             self.bot = RandomBot(self.engine, bot_color)
+            if white_player == "Random bot":
+                self.bot = RandomBot(self.engine, bot_color)
+            elif white_player == "Tree bot":
+                self.bot = TreeBot(self.engine)
             self.player_color = "white" if white_player == "Human" else "black"
 
 
         # Manage if this is two bot playing one against the other
         if not self.is_player:
+
+            if white_player == "Random bot":
+                self.white_player = RandomBot(self.engine, "white")
+            elif white_player == "Tree bot":
+                self.white_player = TreeBot(self.engine)
+                self.white_player.fit("data/1800thresh_1448.pgn")
+            else:
+                self.white_player = None
+
+
+            if black_player == "Random bot":
+                self.black_player = RandomBot(self.engine, "black")
+            elif white_player == "Tree bot":
+                self.black_player = TreeBot(self.engine)
+                self.black_player.fit("data/1800thresh_1448.pgn")
+            else:
+                self.black_player = None
             
-            self.white_player = RandomBot(self.engine, "white") if white_player == "Random bot" else None
-            self.black_player = RandomBot(self.engine, "black") if black_player == "Random bot" else None
+            
             self.bots_game()
 
         else:

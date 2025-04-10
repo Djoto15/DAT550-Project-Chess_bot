@@ -1,107 +1,79 @@
-import chess
-import chess.pgn
-from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
+import chess.pgn
+import chess
 import numpy as np
 
-# Piece value calculation
-def piece_value(piece):
-    """Return value of a piece."""
-    if piece.piece_type == chess.PAWN:
-        return 1
-    elif piece.piece_type == chess.KNIGHT:
-        return 3
-    elif piece.piece_type == chess.BISHOP:
-        return 3
-    elif piece.piece_type == chess.ROOK:
-        return 5
-    elif piece.piece_type == chess.QUEEN:
-        return 9
-    return 0
+class TreeBot:
+    def __init__(self, engine):
+        self.clf = DecisionTreeClassifier()
+        self.move_map = {}  # maps move to index
+        self.reverse_move_map = {}  # reverse mapping
+        self.engine = engine
 
-# Central control (whether a piece is in the center of the board)
-def is_central(square):
-    """Check if a square is in the center of the board."""
-    return square in [chess.D4, chess.D5, chess.E4, chess.E5]
+    def extract_features(self, board):
+        """Extract simple features like material balance."""
+        piece_values = {
+            chess.PAWN: 1,
+            chess.KNIGHT: 3,
+            chess.BISHOP: 3,
+            chess.ROOK: 5,
+            chess.QUEEN: 9,
+        }
 
-# Feature extraction
-def get_features(board):
-    """Generate features from the current chess board."""
-    material_balance = 0
-    central_control = 0
-    piece_activity = 0
-    king_safety = 0
-    
-    # Calculate material balance and central control
-    for square, piece in board.piece_map().items():
-        material_balance += piece_value(piece)
-        if is_central(square):
-            central_control += 1
-    
-    # Count legal moves (piece activity)
-    piece_activity = len(list(board.legal_moves))
-    
-    # Check king safety (whether the king is in check)
-    king_safety = 1 if board.is_check() else 0
-    
-    # Return features (in a list)
-    return [material_balance, central_control, piece_activity, king_safety]
+        white_material = 0
+        black_material = 0
 
-# Load chess games from a PGN file
-def load_games(pgn_file):
-    """Load games from a PGN file."""
-    games = []
-    with open(pgn_file, 'r') as f:
-        game = chess.pgn.read_game(f)
-        while game:
-            games.append(game)
-            game = chess.pgn.read_game(f)
-    return games
+        for piece_type in piece_values:
+            white_material += len(board.pieces(piece_type, chess.WHITE)) * piece_values[piece_type]
+            black_material += len(board.pieces(piece_type, chess.BLACK)) * piece_values[piece_type]
 
-# Generate features and labels from games
-def generate_data(games):
-    """Generate training data (features and labels) from chess games."""
-    data = []
-    labels = []
-    for game in games:
-        board = game.board()
-        for move in game.mainline_moves():
-            features = get_features(board)
-            data.append(features)
-            labels.append(move.uci())  # Best move as label
-            board.push(move)  # Update the board after the move
-    return data, labels
+        return [white_material - black_material]  # You can add more features later
 
-# Train decision tree and predict the best move
-def train_and_predict(pgn_file):
-    """Train a decision tree and predict the best move for a given board."""
-    # Load and process games
-    games = load_games(pgn_file)
-    data, labels = generate_data(games)
+    def fit(self, pgn_path):
+        """Train the decision tree on the PGN games."""
+        X = []
+        y = []
+        move_index = 0
 
-    # Split into training and testing sets
-    X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.2, random_state=42)
+        with open(pgn_path) as pgn:
+            while game := chess.pgn.read_game(pgn):
+                board = game.board()
+                for move in game.mainline_moves():
+                    features = self.extract_features(board)
+                    move_uci = move.uci()
 
-    # Train a decision tree classifier
-    clf = DecisionTreeClassifier(random_state=42)
-    clf.fit(X_train, y_train)
+                    if move_uci not in self.move_map:
+                        self.move_map[move_uci] = move_index
+                        self.reverse_move_map[move_index] = move_uci
+                        move_index += 1
 
-    # Evaluate the classifier
-    print(f"Accuracy on test set: {clf.score(X_test, y_test):.4f}")
+                    X.append(features)
+                    y.append(self.move_map[move_uci])
+                    board.push(move)
 
-    # Predict the best move for the current board
-    board = chess.Board()  # Starting from the initial board position
-    features = get_features(board)
-    predicted_move_uci = clf.predict([features])[0]
-    predicted_move = chess.Move.from_uci(predicted_move_uci)
-    print(f"Predicted move for the initial board: {predicted_move}")
+        self.clf.fit(X, y)
+        print("Bot training finished.")
 
-    return clf
+    def predict(self):
+        """Predict the best move from a given position."""
+        features = self.extract_features(self.engine.board)
+        move_index = self.clf.predict([features])[0]
+        predicted_move = chess.Move.from_uci(self.reverse_move_map[move_index])
+        if predicted_move in self.engine.board.legal_moves:
+            return predicted_move
+        else:
+            # fallback: pick a random legal move if prediction is illegal
+            return list(self.engine.board.legal_moves)[0]
 
-# Main function
-if __name__ == "__main__":
-    # Specify the PGN file containing the chess games
-    pgn_file = "chess_games.pgn"  # Replace with the actual path to your PGN file
 
-    # Train the model and predict a move
-    clf = train_and_predict(pgn_file)
+# bot = TreeBot()
+# bot.fit("data/1800thresh_1448.pgn")
+
+# # Predict a move from the starting position
+# board = chess.Board()
+# while not board.is_game_over():
+#     move = bot.predict(board)
+#     print(f"Bot plays: {move}")
+#     board.push(move)
+#     print(board)
+
