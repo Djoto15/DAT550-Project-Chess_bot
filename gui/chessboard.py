@@ -443,11 +443,6 @@ class ChessBoard(QWidget):
         self.training.train()
 
 
-    
-
-        
-
-
 
     # -------- Specific square methods --------
 
