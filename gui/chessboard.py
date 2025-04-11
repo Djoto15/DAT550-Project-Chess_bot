@@ -8,7 +8,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import math
 
-from gui.variables import PIECE_IMAGES, WHITE, GREEN, YELLOW, SQUARE_SIZE, RED
+from gui.variables import PIECE_IMAGES, WHITE, GREEN, YELLOW, SQUARE_SIZE, RED, PGN_PATH
 from gui.promotion import PromotionWidget
 from gui.game_over import GameOverPopup
 
@@ -661,7 +661,7 @@ class ChessBoard(QWidget):
             # Start the training phase
             if white_player != "Random bot" or black_player != "Random bot":
                 print(self.white_player, self.black_player)
-                self.start_training(pgn_path="data/1800thresh_6938.pgn", White=self.white_player, Black=self.black_player)
+                self.start_training(pgn_path=PGN_PATH, White=self.white_player, Black=self.black_player)
             else:
                 self.bots_game()
             
@@ -676,7 +676,7 @@ class ChessBoard(QWidget):
 
             elif white_player == "Tree bot" or black_player == "Tree bot":
                 self.bot = TreeBot(self.engine, bot_color)
-                self.start_training(pgn_path="data/1800thresh_1448.pgn", White=self.bot, Black=None)
+                self.start_training(pgn_path=PGN_PATH, White=self.bot, Black=None)
 
             self.player_color = "white" if white_player == "Human" else "black"
 

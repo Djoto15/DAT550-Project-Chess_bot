@@ -112,5 +112,5 @@ class TreeBot:
             self.illegal_predictions += 1
             return random.choice(list(self.engine.legal_moves())), True
 
-        print(f"Legal mov predicted: {predicted_move}")
+        print(f"Legal move predicted: {predicted_move}")
         return predicted_move, False
