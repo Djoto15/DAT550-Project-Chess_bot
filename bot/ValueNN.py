@@ -2,7 +2,7 @@ import chess.pgn
 import torch
 import torch.nn as nn
 import numpy as np
-from smart_nn_bot import ValueNet, board_to_tensor
+from bot.ValueNN_bot import ValueNet, board_to_tensor
 
 
 def result_to_score(result_str):

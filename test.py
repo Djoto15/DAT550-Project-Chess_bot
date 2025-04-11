@@ -1,34 +1,54 @@
+import torch
+import pickle
 import chess
-import random
 
-def random_bot_move(board):
-    """Returns a random legal move for the bot."""
-    legal_moves = list(board.legal_moves)
-    return random.choice(legal_moves)
+from bot.smart_nn_bot import ValueNet, SmartNNBot
 
-def play_game():
-    board = chess.Board()
-    
-    while not board.is_game_over():
-        print(board)
-        
-        if not board.turn:  # Black's turn (False for Black, True for White)
-            print("Black's turn (Bot):")
-            move = random_bot_move(board)
-            print(f"Bot chose move: {move.uci()}")
-        else:
-            print("White's turn (Human):")
-            human_move = input("Enter your move (e.g., e2e4): ")
-            move = chess.Move.from_uci(human_move)
-            while move not in board.legal_moves:
-                print("Invalid move. Try again.")
-                human_move = input("Enter your move (e.g., e2e4): ")
-                move = chess.Move.from_uci(human_move)
-        
-        board.push(move)  # Apply the move to the board
+# --- Charger le modèle ---
+model = ValueNet()
+model.load_state_dict(torch.load("bot/mon_value_model.pt"))  # Ton modèle entraîné
+model.eval()
 
-    print("Game Over!")
+# --- Créer le bot ---
+bot = SmartNNBot(model, depth=3)  # Tu peux mettre depth=3 pour + strat
+
+# --- Créer l’échiquier ---
+board = chess.Board()
+
+print("\n🎯 Tu joues les BLANCS.")
+print("Entre tes coups au format UCI (ex: e2e4).")
+
+# --- Boucle de jeu ---
+while not board.is_game_over():
+    print("\n🔷 État de l’échiquier :\n")
     print(board)
 
-if __name__ == "__main__":
-    play_game()
+    # Tour du joueur
+    move_str = input("\n👉 Ton coup : ").strip()
+    try:
+        move = chess.Move.from_uci(move_str)
+        if move not in board.legal_moves:
+            raise ValueError("Coup illégal.")
+        board.push(move)
+    except:
+        print("❌ Coup invalide. Réessaie.")
+        continue
+
+    if board.is_game_over():
+        break
+
+    # Tour du bot
+    print("\n🤖 Le bot réfléchit...")
+    bot_move = bot.play(board)
+
+    if bot_move is None:
+        print("❌ Le bot ne trouve pas de coup.")
+        break
+
+    print(f"🤖 Le bot joue : {bot_move.uci()}")
+    board.push(bot_move)
+
+# --- Résultat ---
+print("\n🏁 Partie terminée !")
+print(board)
+print("Résultat :", board.result())
