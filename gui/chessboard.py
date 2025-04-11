@@ -652,15 +652,15 @@ class ChessBoard(QWidget):
 
             if black_player == "Random bot":
                 self.black_player = RandomBot(self.engine, "black")
-            elif white_player == "Tree bot":
+            elif black_player == "Tree bot":
                 self.black_player = TreeBot(self.engine, "black")
                 # self.black_player.fit("data/1800thresh_1448.pgn")
             else:
                 self.black_player = None
 
             # Start the training phase
-            if white_player != "Random bot" and black_player != "Random bot":
-                print("Started training.")
+            if white_player != "Random bot" or black_player != "Random bot":
+                print(self.white_player, self.black_player)
                 self.start_training(pgn_path="data/1800thresh_1448.pgn", White=self.white_player, Black=self.black_player)
             else:
                 self.bots_game()

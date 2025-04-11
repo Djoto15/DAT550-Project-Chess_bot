@@ -2,6 +2,13 @@ from sklearn.tree import DecisionTreeClassifier
 import chess.pgn
 import chess
 import random
+
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from engine import Engine
+
 class TreeBot:
     def __init__(self, engine, color):
         self.clf = DecisionTreeClassifier()
@@ -92,15 +99,15 @@ class TreeBot:
         return best_move
 
 
+engine = Engine()
+bot = TreeBot(engine, "white")
+bot.fit("data/1800thresh_1448.pgn")
 
-# bot = TreeBot()
-# bot.fit("data/1800thresh_1448.pgn")
-
-# # Predict a move from the starting position
-# board = chess.Board()
-# while not board.is_game_over():
-#     move = bot.predict(board)
-#     print(f"Bot plays: {move}")
-#     board.push(move)
-#     print(board)
+# Predict a move from the starting position
+board = chess.Board()
+while not board.is_game_over():
+    move = bot.predict()
+    print(f"Bot plays: {move}")
+    board.push(move)
+    print(board)
 

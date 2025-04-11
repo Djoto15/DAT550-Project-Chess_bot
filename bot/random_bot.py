@@ -23,7 +23,7 @@ class RandomBot():
         legal_moves = [move for move in moves if self.engine.board.color_at(move.from_square) == chess_color]
         return legal_moves
     
-    def fit(self):
+    def fit(self, pgn_path):
         """Just do nothing but debbug."""
         pass
 
