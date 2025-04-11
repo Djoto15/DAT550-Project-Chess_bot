@@ -1,3 +1,6 @@
+# The model makes decisions based on what it has learned during the training phase and does not evaluate future states.
+
+
 from sklearn.tree import DecisionTreeClassifier
 import chess.pgn
 import chess

@@ -42,7 +42,7 @@ def evaluate():
     engine = Engine()
     tree_bot = TreeBot(engine, "white")
     random_bot = RandomBot(engine, "black")
-    tree_bot.fit(pgn_path)
+    # tree_bot.fit(pgn_path)
 
     evaluate_bot(tree_bot, random_bot)
 

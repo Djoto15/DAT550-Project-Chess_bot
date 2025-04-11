@@ -671,7 +671,7 @@ class ChessBoard(QWidget):
 
             elif white_player == "Tree bot" or black_player == "Tree bot":
                 self.bot = TreeBot(self.engine, bot_color)
-                self.start_training(pgn_path=PGN_PATH, White=self.bot, Black=None)
+                # self.start_training(pgn_path=PGN_PATH, White=self.bot, Black=None)
 
             self.player_color = "white" if white_player == "Human" else "black"
 
