@@ -371,7 +371,7 @@ class ChessBoard(QWidget):
         """
         Make the bot move.
         """
-        chess_move = bot.predict() # return the move to do using the python-chess format
+        chess_move = bot.predict()[0] # return the move to do using the python-chess format
         if chess_move:
             # print("there's a move")
             move_uci = chess_move.uci() # string format like "e2e4" or "e7e8q"
@@ -661,7 +661,7 @@ class ChessBoard(QWidget):
             # Start the training phase
             if white_player != "Random bot" or black_player != "Random bot":
                 print(self.white_player, self.black_player)
-                self.start_training(pgn_path="data/1800thresh_1448.pgn", White=self.white_player, Black=self.black_player)
+                self.start_training(pgn_path="data/1800thresh_6938.pgn", White=self.white_player, Black=self.black_player)
             else:
                 self.bots_game()
             

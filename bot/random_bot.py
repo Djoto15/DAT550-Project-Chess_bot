@@ -35,7 +35,7 @@ class RandomBot():
         legal_moves = self.get_moves()
         if legal_moves: # if there is not checkmate
             move = random.choice(legal_moves)
-            return move
+            return move, None
         else:
-            return None
+            return None, None
 

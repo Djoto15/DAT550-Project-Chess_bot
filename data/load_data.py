@@ -1,6 +1,6 @@
 import re
 
-input_file = 'first_10000_games.pgn'
+input_file = 'first_20000_games.pgn'
 output_file = 'filtered_games.pgn'
 min_elo = 1800
 
