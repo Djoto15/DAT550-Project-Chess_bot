@@ -2,12 +2,8 @@ from sklearn.tree import DecisionTreeClassifier
 import chess.pgn
 import chess
 import random
+from tqdm import tqdm  # Progress bar
 
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from engine import Engine
 
 class TreeBot:
     def __init__(self, engine, color):
@@ -15,11 +11,24 @@ class TreeBot:
         self.move_map = {}  # maps move to index
         self.reverse_move_map = {}  # reverse mapping
         self.engine = engine
-        self.color = color
+        self.color = chess.WHITE if color == "white" else chess.BLACK
+        self.illegal_predictions = 0
+
+
+    def count_games(self, pgn_file):
+        game_count = 0
+        with open(pgn_file, 'r') as file:
+            for line in file:
+                if line.startswith('[Event "'):
+                    game_count += 1
+        return game_count
+
 
     def extract_features(self, board):
         """
-        Extract material balance feature (difference in piece material value).
+        Extract features:
+        - Material balance (difference in piece material value)
+        - Center control (own pieces occupying or attacking center squares)
         """
         piece_values = {
             chess.PAWN: 1,
@@ -29,32 +38,44 @@ class TreeBot:
             chess.QUEEN: 9,
         }
 
-        # Calculate material balance
-        white_material = 0
-        black_material = 0
-        for piece_type in piece_values:
-            white_material += len(board.pieces(piece_type, chess.WHITE)) * piece_values[piece_type]
-            black_material += len(board.pieces(piece_type, chess.BLACK)) * piece_values[piece_type]
-        
+        white_material = sum(len(board.pieces(p, chess.WHITE)) * v for p, v in piece_values.items())
+        black_material = sum(len(board.pieces(p, chess.BLACK)) * v for p, v in piece_values.items())
         material_balance = white_material - black_material
 
-        # Return the material balance as the only feature
-        features = [material_balance]
+        center_squares = [chess.D4, chess.E4, chess.D5, chess.E5]
+        color = board.turn
 
-        return features
+        center_score = 0
+        for square in center_squares:
+            piece = board.piece_at(square)
+            if piece and piece.color == color:
+                center_score += 1
+            attackers = board.attackers(color, square)
+            center_score += len(attackers) * 0.5
 
+        return [material_balance, center_score]
+    
 
     def fit(self, pgn_path):
-        """Train the decision tree on the PGN games."""
+        """Train the decision tree on PGN games, using only moves played by the bot's color."""
         X = []
         y = []
         move_index = 0
+        count = self.count_games(pgn_path)
         print("Started training...")
 
         with open(pgn_path) as pgn:
-            while game := chess.pgn.read_game(pgn):
+            for _ in tqdm(range(count), desc="Training progress", unit="game"):
+                game = chess.pgn.read_game(pgn)
+                if game is None:
+                    break
+
                 board = game.board()
                 for move in game.mainline_moves():
+                    if board.turn != self.color:
+                        board.push(move)
+                        continue
+
                     features = self.extract_features(board)
                     move_uci = move.uci()
 
@@ -67,47 +88,29 @@ class TreeBot:
                     y.append(self.move_map[move_uci])
                     board.push(move)
 
+        if not X:
+            print("No training data collected. Please check the PGN file and color filter.")
+            return
+
         self.clf.fit(X, y)
-        print("Bot training finished.")
+        print(f"Bot training finished. Trained on {len(X)} moves from {count} games.")
+
 
     def predict(self):
-        """
-        Given a board position, predict the best move to decrease the opponent's material balance.
-        """
-        best_move = None
-        best_material_balance_change = float('inf')  # Start with a large positive value
-        
-        for move in self.engine.legal_moves():
-            # Make the move to simulate the result
-            self.engine.push(move)
-            
-            # Extract the material balance after the move
-            material_balance_after_move = self.extract_features(self.engine.board)[0]  # Use the material balance feature
-            
-            # Calculate the change in material balance (how much the opponent's material decreases)
-            material_balance_change = material_balance_after_move
-            
-            # Check if this move decreases the opponent's material more
-            if material_balance_change < best_material_balance_change:
-                best_material_balance_change = material_balance_change
-                best_move = move
-            
-            # Undo the move after evaluating it
-            self.engine.board.pop()
-        
-        # Return the move that decreases the opponent's material the most
-        return best_move
+        """Use the decision tree to predict the best move based on the current board features."""
+        features = self.extract_features(self.engine.board)
+        move_index = self.clf.predict([features])[0]
 
+        move_uci = self.reverse_move_map.get(move_index)
+        if move_uci is None:
+            print("Predicted move not found. Picking random legal move.")
+            return random.choice(list(self.engine.legal_moves())), True
 
-engine = Engine()
-bot = TreeBot(engine, "white")
-bot.fit("data/1800thresh_1448.pgn")
+        predicted_move = chess.Move.from_uci(move_uci)
+        if predicted_move not in self.engine.legal_moves():
+            print(f"Illegal predicted move: {predicted_move}. Picking random legal move.")
+            self.illegal_predictions += 1
+            return random.choice(list(self.engine.legal_moves())), True
 
-# Predict a move from the starting position
-board = chess.Board()
-while not board.is_game_over():
-    move = bot.predict()
-    print(f"Bot plays: {move}")
-    board.push(move)
-    print(board)
-
+        print(f"Legal move predicted: {predicted_move}")
+        return predicted_move, False

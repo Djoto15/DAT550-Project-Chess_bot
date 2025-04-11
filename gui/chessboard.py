@@ -8,7 +8,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import math
 
-from gui.variables import PIECE_IMAGES, WHITE, GREEN, YELLOW, SQUARE_SIZE, RED
+from gui.variables import PIECE_IMAGES, WHITE, GREEN, YELLOW, SQUARE_SIZE, RED, PGN_PATH
 from gui.promotion import PromotionWidget
 from gui.game_over import GameOverPopup
 
@@ -371,7 +371,7 @@ class ChessBoard(QWidget):
         """
         Make the bot move.
         """
-        chess_move = bot.predict() # return the move to do using the python-chess format
+        chess_move = bot.predict()[0] # return the move to do using the python-chess format
         if chess_move:
             # print("there's a move")
             move_uci = chess_move.uci() # string format like "e2e4" or "e7e8q"
@@ -441,11 +441,6 @@ class ChessBoard(QWidget):
         # Initialize and start training
         self.training = Training(White, Black, pgn_path, self, on_training_complete)
         self.training.train()
-
-
-    
-
-        
 
 
 
@@ -661,7 +656,7 @@ class ChessBoard(QWidget):
             # Start the training phase
             if white_player != "Random bot" or black_player != "Random bot":
                 print(self.white_player, self.black_player)
-                self.start_training(pgn_path="data/1800thresh_1448.pgn", White=self.white_player, Black=self.black_player)
+                self.start_training(pgn_path=PGN_PATH, White=self.white_player, Black=self.black_player)
             else:
                 self.bots_game()
             
@@ -676,7 +671,7 @@ class ChessBoard(QWidget):
 
             elif white_player == "Tree bot" or black_player == "Tree bot":
                 self.bot = TreeBot(self.engine, bot_color)
-                self.start_training(pgn_path="data/1800thresh_1448.pgn", White=self.bot, Black=None)
+                self.start_training(pgn_path=PGN_PATH, White=self.bot, Black=None)
 
             self.player_color = "white" if white_player == "Human" else "black"
 
