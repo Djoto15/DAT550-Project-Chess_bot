@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QLabel, QAction, QVBoxLayout, QPushButton, QMessageBox
+from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QLabel, QAction, QVBoxLayout, QDialog, QSpacerItem, QSizePolicy
 from PyQt5.QtGui import QPalette, QColor, QPainter, QPainterPath, QPixmap
 from PyQt5.QtCore import Qt, QPropertyAnimation, QPoint, pyqtSignal, QTimer
 
@@ -11,7 +11,11 @@ import math
 from gui.variables import PIECE_IMAGES, WHITE, GREEN, YELLOW, SQUARE_SIZE, RED
 from gui.promotion import PromotionWidget
 from gui.game_over import GameOverPopup
+
+# Bot import
 from bot import RandomBot
+from bot import TreeBot
+from bot import Training
 
 
 class ChessBoard(QWidget):
@@ -38,6 +42,7 @@ class ChessBoard(QWidget):
 
         # Game configuration
         self.initConfig()
+        self.initTraining()
 
 
 
@@ -55,16 +60,43 @@ class ChessBoard(QWidget):
         self.isBot = False
 
         # Temp attributes
-        self.bot_color = "white"
+        self.bot_color = None
 
 
 
-    
+    def initTraining(self):
+        """
+        Initialize the training of the bots with a custom widget displaying the training status.
+        """
+        # Create a widget for the training message
+        self.training_widget = QWidget(self)
+        self.training_widget.setStyleSheet(
+            """
+            background-color: #54575c;
+            border-radius: 10px;
+            padding: 10px;
+            """
+        )
+
+        # Create the label for the message
+        self.training_label = QLabel("Training bots...", self)
+        self.training_label.setAlignment(Qt.AlignCenter)
+        self.training_label.setStyleSheet("font-size: 24px; color: white;")
+        
+        # Create a layout for the training widget (center the label)
+        self.layout = QVBoxLayout(self.training_widget)
+        self.layout.addWidget(self.training_label)
+        
+        # Create a layout for the ChessBoard to center the training widget
+        main_layout = QVBoxLayout(self)  # Assuming self is a QWidget (ChessBoard)
+        main_layout.setAlignment(Qt.AlignCenter)  # Align child widgets to center
+        main_layout.addWidget(self.training_widget)
+        
+        # Hide the widget initially
+        self.training_widget.hide()
 
 
-    def start_game(self):
-        if self.bot_color == "white" and self.isBot:
-            QTimer.singleShot(100, lambda: self.play_bot(self.bot))
+
         
 
 
@@ -228,6 +260,10 @@ class ChessBoard(QWidget):
     def refresh(self):
         QTimer.singleShot(100, lambda: self.update())
 
+    def start_game(self):
+        if self.bot_color == "white" and self.isBot:
+            QTimer.singleShot(100, lambda: self.play_bot(self.bot))
+
 
 
     # -------- Mouse event methods --------
@@ -258,7 +294,7 @@ class ChessBoard(QWidget):
                         
                         self.switch_turn()    # Change player's turn
 
-                        if self.isBot:
+                        if self.isBot and self.current_turn == self.bot_color:
                             QTimer.singleShot(500, lambda: self.play_bot(self.bot))
                             # self.play_bot()
 
@@ -292,7 +328,7 @@ class ChessBoard(QWidget):
                         
                         self.switch_turn()    # Change player's turn
 
-                        if self.isBot:
+                        if self.isBot and self.current_turn == self.bot_color:
                             QTimer.singleShot(500, lambda: self.play_bot(self.bot))
                             # self.play_bot()
                         
@@ -314,6 +350,8 @@ class ChessBoard(QWidget):
                 self.highlighted_square = [square_pos]
                 self.selected_squares = [square_pos]
 
+            self.refresh()   # call the paintEvent method to redraw the board
+
             
 
         else:
@@ -321,7 +359,7 @@ class ChessBoard(QWidget):
             # if the bot plays white, need to configure that further
 
         
-        self.refresh()   # call the paintEvent method to redraw the board
+        
 
         # Check if the game is over
         self.is_game_over()
@@ -333,8 +371,9 @@ class ChessBoard(QWidget):
         """
         Make the bot move.
         """
-        chess_move = bot.play() # return the move to do using the python-chess format
+        chess_move = bot.predict() # return the move to do using the python-chess format
         if chess_move:
+            # print("there's a move")
             move_uci = chess_move.uci() # string format like "e2e4" or "e7e8q"
 
             # Transform the move format for the gui
@@ -362,6 +401,7 @@ class ChessBoard(QWidget):
         """
         # We want to control when to call play_bot using a QTimer
         def play_next_turn():
+            # print("next turn")
             if self.current_turn == "white":
                 # print(f"White's turn: {self.current_turn}")
                 self.play_bot(self.white_player)  # Make White's move
@@ -384,6 +424,26 @@ class ChessBoard(QWidget):
         QTimer.singleShot(500, play_next_turn)
 
 
+    def start_training(self,pgn_path, White=None, Black=None):
+        """ Method to start the training phase """
+        def on_training_complete():
+            """ Callback method when training is complete """
+            
+            # Hide the training widget once done
+            self.training_widget.hide()
+
+            # Any other logic to handle after training completion
+            print("Training completed!")
+
+        # Show the training widget
+        self.training_widget.show()
+
+        # Initialize and start training
+        self.training = Training(White, Black, pgn_path, self, on_training_complete)
+        self.training.train()
+
+
+    
 
         
 
@@ -443,7 +503,7 @@ class ChessBoard(QWidget):
         distance = math.sqrt((new_pos_x - x_pos) ** 2 + (new_pos_y - y_pos) ** 2)
 
         # Duration of the animation depends on the distance
-        duration = int(distance * 0.6)
+        duration = int(distance * 0.6)  # 0.6 is the sweet spot
 
         # Set up the animation for smooth piece movement
         self.animation = QPropertyAnimation(self.piece_label, b"pos")
@@ -578,23 +638,52 @@ class ChessBoard(QWidget):
         
 
 
-        # Set up the different attributes
-        if self.isBot:
-            bot_color = "white" if white_player != "Human" else "black"
-            self.bot = RandomBot(self.engine, bot_color)
-            self.player_color = "white" if white_player == "Human" else "black"
-
-
         # Manage if this is two bot playing one against the other
         if not self.is_player:
-            
-            self.white_player = RandomBot(self.engine, "white") if white_player == "Random bot" else None
-            self.black_player = RandomBot(self.engine, "black") if black_player == "Random bot" else None
-            self.bots_game()
 
-        else:
-            self.reset_game()
-            QTimer.singleShot(500, lambda: self.start_game())
+            if white_player == "Random bot":
+                self.white_player = RandomBot(self.engine, "white")
+            elif white_player == "Tree bot":
+                self.white_player = TreeBot(self.engine, "white")
+                # self.white_player.fit("data/1800thresh_1448.pgn")
+            else:
+                self.white_player = None
+
+
+            if black_player == "Random bot":
+                self.black_player = RandomBot(self.engine, "black")
+            elif black_player == "Tree bot":
+                self.black_player = TreeBot(self.engine, "black")
+                # self.black_player.fit("data/1800thresh_1448.pgn")
+            else:
+                self.black_player = None
+
+            # Start the training phase
+            if white_player != "Random bot" or black_player != "Random bot":
+                print(self.white_player, self.black_player)
+                self.start_training(pgn_path="data/1800thresh_1448.pgn", White=self.white_player, Black=self.black_player)
+            else:
+                self.bots_game()
+            
+            
+
+        elif self.isBot:
+            bot_color = "white" if white_player != "Human" else "black"
+            self.bot_color = bot_color
+
+            if white_player == "Random bot" or black_player == "Random bot":
+                self.bot = RandomBot(self.engine, bot_color)
+
+            elif white_player == "Tree bot" or black_player == "Tree bot":
+                self.bot = TreeBot(self.engine, bot_color)
+                self.start_training(pgn_path="data/1800thresh_1448.pgn", White=self.bot, Black=None)
+
+            self.player_color = "white" if white_player == "Human" else "black"
+
+            if bot_color == "white":
+                self.start_game()
+
+
 
 
     def get_fen(self):
@@ -603,6 +692,16 @@ class ChessBoard(QWidget):
         """
         fen = self.engine.get_fen()
         print(fen)
+
+
+    def launch_game(self):
+        """
+        Launch the game if this is two bots playing against each other.
+        """
+        if not self.is_player:
+            self.bots_game()
+        else:
+            QTimer.singleShot(500, lambda: self.start_game())
 
 
     # -------- Game state methods --------

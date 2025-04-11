@@ -71,6 +71,11 @@ class MainWindow(QMainWindow):
         config.triggered.connect(self.config_game)
         GameMenu.addAction(config)
 
+        launch = QAction("Launch game", self)
+        launch.setShortcut("Ctrl+L")
+        launch.triggered.connect(self.launch_game)
+        GameMenu.addAction(launch)
+
 
         set_game = QAction("Debbug game", self)
         set_game.setShortcut("Ctrl+D")
@@ -102,6 +107,9 @@ class MainWindow(QMainWindow):
 
     def get_fen(self):
         self.chessboard.get_fen()
+
+    def launch_game(self):
+        self.chessboard.launch_game()
         
 
         
