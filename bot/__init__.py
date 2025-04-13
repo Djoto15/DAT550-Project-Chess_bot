@@ -1,4 +1,4 @@
 from .random_bot import RandomBot
-# from .tree_bot import TreeBot
-from .minmax import TreeBot
+from .base_model import SimpleBot
 from .train import Training
+from .stockfish import Stockfish
