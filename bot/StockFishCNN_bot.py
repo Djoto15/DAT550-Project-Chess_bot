@@ -27,7 +27,7 @@ def minimax_with_value(board, model, depth, is_max=True):
 
 # --- Bot utilisant ValueNet + Minimax ---
 class ValueBasedBot:
-    def __init__(self, model_path="bot/StockFish_Model.pt", depth=3):
+    def __init__(self, model_path="bot/value_model_stockfish.pt", depth=3):
         self.model = ValueNet()
         self.model.load_state_dict(torch.load(model_path, map_location=torch.device("cpu")))
         self.model.eval()
@@ -46,6 +46,14 @@ class ValueBasedBot:
                 best_score = score
                 best_move = move
 
+        # Évaluation de la position AVANT de jouer le coup
+        board.push(best_move)
+        eval_tensor = torch.tensor(board_to_tensor(board)).unsqueeze(0)
+        with torch.no_grad():
+            eval_score = self.model(eval_tensor).item()
+        board.pop()
+
+        print(f"🧠 Évaluation de la position après le coup {best_move.uci()} : {eval_score:.3f}")
         return best_move
 
 

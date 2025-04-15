@@ -2,7 +2,7 @@ import torch
 import pickle
 import chess
 
-from bot.smart_nn_bot import ValueNet, SmartNNBot
+from bot.ValueNN_bot import ValueNet, SmartNNBot
 
 # --- Charger le modèle ---
 model = ValueNet()

@@ -11,13 +11,14 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
 
-# --- Encodeur de plateau (12x8x8 tensor) ---
+# --- Encodeur de plateau (14x8x8 tensor avec coups légaux) ---
 def board_to_tensor(board):
-    tensor = np.zeros((12, 8, 8), dtype=np.float32)
+    tensor = np.zeros((14, 8, 8), dtype=np.float32)
     piece_to_plane = {
         'P': 0, 'N': 1, 'B': 2, 'R': 3, 'Q': 4, 'K': 5,
         'p': 6, 'n': 7, 'b': 8, 'r': 9, 'q': 10, 'k': 11
     }
+
     for square in chess.SQUARES:
         piece = board.piece_at(square)
         if piece:
@@ -25,6 +26,22 @@ def board_to_tensor(board):
             row = 7 - (square // 8)
             col = square % 8
             tensor[plane][row][col] = 1
+
+    original_turn = board.turn
+
+    board.turn = chess.WHITE
+    for move in board.legal_moves:
+        row = 7 - (move.to_square // 8)
+        col = move.to_square % 8
+        tensor[12][row][col] = 1
+
+    board.turn = chess.BLACK
+    for move in board.legal_moves:
+        row = 7 - (move.to_square // 8)
+        col = move.to_square % 8
+        tensor[13][row][col] = 1
+
+    board.turn = original_turn
     return tensor
 
 
@@ -33,7 +50,7 @@ class ValueNet(nn.Module):
     def __init__(self):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Conv2d(12, 64, kernel_size=3, padding=1),
+            nn.Conv2d(14, 64, kernel_size=3, padding=1),
             #nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
@@ -95,7 +112,7 @@ def extract_data_with_stockfish(pgn_path, stockfish_path, max_positions=1000, ca
 # --- Entraînement avec split validation + batchs ---
 def train_value_net(X, y, epochs=10, lr=0.001, batch_size=128):
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
-    
+
     train_dataset = TensorDataset(torch.tensor(X_train, dtype=torch.float32), torch.tensor(y_train, dtype=torch.float32).unsqueeze(1))
     val_dataset = TensorDataset(torch.tensor(X_val, dtype=torch.float32), torch.tensor(y_val, dtype=torch.float32).unsqueeze(1))
 
@@ -151,17 +168,12 @@ if __name__ == "__main__":
     pgn_path = "data/1800thresh_1448.pgn"  # Remplace par ton fichier PGN
     stockfish_path = "stockfish/stockfish-windows-x86-64-avx2.exe"  # ⚠️ À modifier !
 
-    '''print("\n📥 Extraction des données avec Stockfish...")
-    X, y = extract_data_with_stockfish(pgn_path, stockfish_path, max_positions=50000)    
-    '''
-
-    data = np.load("data/dataset_value_net.npz")
-    X = data['X']
-    y = data['y']
+    print("\n📥 Extraction des données avec Stockfish...")
+    X, y = extract_data_with_stockfish(pgn_path, stockfish_path, max_positions=50000)
 
     print("\n🧠 Entraînement du ValueNet CNN...")
     model = train_value_net(X, y, epochs=15, batch_size=128)
 
     print("\n💾 Sauvegarde du modèle...")
-    torch.save(model.state_dict(), "bot/StockFish_Model.pt")
-    print("\n✅ Modèle sauvegardé sous 'StockFish_Model.pt'")
+    torch.save(model.state_dict(), "value_model_stockfish.pt")
+    print("\n✅ Modèle sauvegardé sous 'value_model_stockfish.pt'")
