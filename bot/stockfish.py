@@ -43,8 +43,29 @@ class Stockfish:
         """
         Close the Stockfish engine when finished.
         """
-        self.engine.quit()
+        self.bot.quit()
 
     def fit(self, pgn_path):
         """Just do nothing but debbug."""
         pass
+
+    def evaluate(self, board):
+        """
+        Evaluate the current board position and return Stockfish's evaluation.
+        The evaluation is returned as an integer (centipawns) where a positive value indicates
+        a favorable position for white, and a negative value indicates a favorable position for black.
+        """
+        # Stockfish evaluation for the current board state
+        info = self.bot.analyse(board, chess.engine.Limit(time=0.1))
+        return info['score'].white().score(mate_score=10000) / 100
+    
+    # def evaluate(self, board):
+    #     info = self.bot.analyse(board, chess.engine.Limit(time=0.1))
+    #     score = info["score"]
+
+    #     if score.is_mate():
+    #         mate_in = score.white().mate()
+    #         return f"Mate in {abs(mate_in)}" if mate_in > 0 else f"-Mate in {abs(mate_in)}"
+    #     else:
+    #         cp = score.white().score()
+    #         return f"{cp / 100:.2f}"

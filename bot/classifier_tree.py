@@ -12,7 +12,7 @@ from engine import Engine
 
 
 
-class SimpleBot:
+class Classifier:
     def __init__(self, engine, color):
         self.clf = DecisionTreeClassifier()
         self.move_map = {}
@@ -53,7 +53,7 @@ class SimpleBot:
             if piece and piece.color == color:
                 center_score += 1
             attackers = board.attackers(color, square)
-            center_score += len(attackers) * 0.5
+            center_score += len(attackers) * 0.05
 
         return [material_balance, center_score]
 
@@ -200,14 +200,16 @@ class SimpleBot:
         # mobility_score = white_mobility - black_mobility
 
         # Final score
-        total_score = (
-            material_score * 1.0 +
-            center_score * 0.5 +
-            king_safety_score * 0.3 
+        # total_score = (
+        #     material_score * 1.0 +
+        #     center_score * 0.5 +
+        #     king_safety_score * 0.3 
             
-        )
+        # )
+        total_score = material_score
 
-        return total_score if self.color == chess.WHITE else -total_score
+        # return total_score if self.color == chess.WHITE else -total_score
+        return total_score
 
 
 
@@ -272,39 +274,3 @@ class SimpleBot:
 #     print(best_move)
 
 
-import chess.engine
-
-def play_vs_stockfish(bot, stockfish_path="/usr/games/stockfish", elo=200, depth=3, verbose=True):
-    board = chess.Board()
-    stockfish = chess.engine.SimpleEngine.popen_uci(stockfish_path)
-
-    # Set Stockfish's skill level based on the given ELO rating
-    skill_level = elo // 100
-    stockfish.configure({"Skill Level": skill_level})
-
-    bot.engine.board = board  # sync bot engine board
-
-    while not board.is_game_over():
-        if board.turn == bot.color:
-            move = bot.predict(depth=depth)
-            if verbose:
-                print(f"Bot plays: {move}")
-        else:
-            result = stockfish.play(board, chess.engine.Limit(time=0.1))
-            move = result.move
-            if verbose:
-                print(f"Stockfish plays: {move}")
-
-        board.push(move)
-        bot.engine.board = board  # keep bot engine in sync
-
-    print("Game Over:", board.result())
-    stockfish.quit()
-
-
-if __name__ == "__main__":
-    engine = Engine()
-    bot = SimpleBot(engine, "white")
-    bot.fit("data/1800thresh_1448.pgn")
-    
-    play_vs_stockfish(bot)

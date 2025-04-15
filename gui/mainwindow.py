@@ -87,6 +87,11 @@ class MainWindow(QMainWindow):
         get_fen.triggered.connect(self.get_fen)
         ToolMenu.addAction(get_fen)
 
+        eval = QAction("Evaluate board", self)
+        eval.setShortcut("Ctrl+E")
+        eval.triggered.connect(self.eval)
+        ToolMenu.addAction(eval)
+
 
     # -------- Action methods --------
 
@@ -110,6 +115,9 @@ class MainWindow(QMainWindow):
 
     def launch_game(self):
         self.chessboard.launch_game()
+
+    def eval(self):
+        self.chessboard.evaluate()
         
 
         
