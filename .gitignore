@@ -35,3 +35,10 @@ dist/
 
 # dotenv
 .env
+
+# Ignorer le dossier "stockfish"
+stockfish/
+
+# Ignorer le fichier spécifique "data/dataset_value_net.npz"
+data/dataset_value_net.npz
+
