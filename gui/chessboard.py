@@ -13,7 +13,7 @@ from gui.promotion import PromotionWidget
 from gui.game_over import GameOverPopup
 
 # Bot import
-from bot import RandomBot, Training, Stockfish, RegressionTreeBot
+from bot import RandomBot, Training, Stockfish, BaseBot
 
 
 
@@ -638,8 +638,8 @@ class ChessBoard(QWidget):
 
             if white_player == "Random bot":
                 self.white_player = RandomBot(self.engine, "white")
-            elif white_player == "Regression tree":
-                self.white_player = RegressionTreeBot(self.engine)
+            elif white_player == "Base bot":
+                self.white_player = BaseBot(self.engine)
             
             elif white_player == "Stockfish":
                 self.white_player = Stockfish(self.engine, elo=200)
@@ -650,8 +650,8 @@ class ChessBoard(QWidget):
 
             if black_player == "Random bot":
                 self.black_player = RandomBot(self.engine, "black")
-            elif black_player == "Regression tree":
-                self.black_player = RegressionTreeBot(self.engine)
+            elif black_player == "Base bot":
+                self.black_player = BaseBot(self.engine)
             
             elif black_player == "Stockfish":
                 self.black_player = Stockfish(self.engine, elo=200)
@@ -660,7 +660,7 @@ class ChessBoard(QWidget):
                 self.black_player = None
 
             # Start the training phase
-            if white_player == "Regression tree" or black_player != "Regression tree":
+            if white_player == "Base bot" or black_player != "Base bot":
                 if white_player == "Random bot":
                     self.start_training(None, self.black_player)
                 elif black_player == "Random bot":
@@ -679,8 +679,8 @@ class ChessBoard(QWidget):
             if white_player == "Random bot" or black_player == "Random bot":
                 self.bot = RandomBot(self.engine, bot_color)
 
-            elif white_player == "Regression tree" or black_player == "Regression tree":
-                self.bot = RegressionTreeBot(self.engine)
+            elif white_player == "Base bot" or black_player == "Base bot":
+                self.bot = BaseBot(self.engine)
                 # self.bot.fit(PGN_PATH)
                 self.start_training(self.bot, None)
 

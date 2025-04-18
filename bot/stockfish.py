@@ -61,3 +61,6 @@ class Stockfish:
     def fit(self, pgn_path):
         # Not used for Stockfish, but included for interface consistency
         pass
+
+    def close(self):
+        self.bot.quit()

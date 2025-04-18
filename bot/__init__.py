@@ -1,5 +1,5 @@
 from .random_bot import RandomBot
-from .base_model import RegressionTreeBot
+from .base_model import BaseBot
 
 
 from .train import Training
