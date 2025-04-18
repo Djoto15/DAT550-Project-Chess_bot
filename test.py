@@ -1,34 +1,21 @@
 import chess
-import random
+import matplotlib.pyplot as plt
+import numpy as np
+import sys
+import os
 
-def random_bot_move(board):
-    """Returns a random legal move for the bot."""
-    legal_moves = list(board.legal_moves)
-    return random.choice(legal_moves)
+# Add parent directory to path to import engine and bots
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-def play_game():
-    board = chess.Board()
-    
-    while not board.is_game_over():
-        print(board)
-        
-        if not board.turn:  # Black's turn (False for Black, True for White)
-            print("Black's turn (Bot):")
-            move = random_bot_move(board)
-            print(f"Bot chose move: {move.uci()}")
-        else:
-            print("White's turn (Human):")
-            human_move = input("Enter your move (e.g., e2e4): ")
-            move = chess.Move.from_uci(human_move)
-            while move not in board.legal_moves:
-                print("Invalid move. Try again.")
-                human_move = input("Enter your move (e.g., e2e4): ")
-                move = chess.Move.from_uci(human_move)
-        
-        board.push(move)  # Apply the move to the board
-
-    print("Game Over!")
-    print(board)
+from engine import Engine
+from bot import Stockfish, RegressionTreeBot
 
 if __name__ == "__main__":
-    play_game()
+    engine = Engine()
+    bot = RegressionTreeBot(engine)
+    stockfish = Stockfish(engine)
+
+    bot.fit()
+    print("Training done.")
+
+    stockfish.predict()

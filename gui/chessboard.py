@@ -8,12 +8,12 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import math
 
-from gui.variables import PIECE_IMAGES, WHITE, GREEN, YELLOW, SQUARE_SIZE, RED, PGN_PATH
+from gui.variables import PIECE_IMAGES, WHITE, GREEN, YELLOW, SQUARE_SIZE, RED
 from gui.promotion import PromotionWidget
 from gui.game_over import GameOverPopup
 
 # Bot import
-from bot import RandomBot, Classifier, Regression, Training, Stockfish
+from bot import RandomBot, Training, Stockfish, RegressionTreeBot
 
 
 
@@ -371,7 +371,7 @@ class ChessBoard(QWidget):
         """
         Make the bot move.
         """
-        chess_move = bot.predict()[0] # return the move to do using the python-chess format
+        chess_move = bot.predict() # return the move to do using the python-chess format
         if chess_move:
             # print("there's a move")
             move_uci = chess_move.uci() # string format like "e2e4" or "e7e8q"
@@ -424,7 +424,7 @@ class ChessBoard(QWidget):
         QTimer.singleShot(500, play_next_turn)
 
 
-    def start_training(self, White, Black, pgn_path):
+    def start_training(self, White, Black):
         """ Method to start the training phase """
         def on_training_complete():
             """ Callback method when training is complete """
@@ -439,7 +439,7 @@ class ChessBoard(QWidget):
         self.training_widget.show()
 
         # Initialize and start training
-        self.training = Training(White, Black, pgn_path, on_training_complete)
+        self.training = Training(White, Black, on_training_complete)
         self.training.train()
 
 
@@ -638,12 +638,9 @@ class ChessBoard(QWidget):
 
             if white_player == "Random bot":
                 self.white_player = RandomBot(self.engine, "white")
-            elif white_player == "Classifier":
-                self.white_player = Classifier(self.engine, "white")
-                # self.white_player.fit(PGN_PATH)
-            elif white_player == "Regression":
-                self.white_player = Regression(self.engine)
-                # self.white_player.fit(PGN_PATH)
+            elif white_player == "Regression tree":
+                self.white_player = RegressionTreeBot(self.engine)
+            
             elif white_player == "Stockfish":
                 self.white_player = Stockfish(self.engine, elo=200)
                 self.is_stockfish = self.white_player
@@ -653,12 +650,9 @@ class ChessBoard(QWidget):
 
             if black_player == "Random bot":
                 self.black_player = RandomBot(self.engine, "black")
-            elif black_player == "Classifier":
-                self.black_player = Classifier(self.engine, "black")
-                # self.black_player.fit(PGN_PATH)
-            elif black_player == "Regression":
-                self.black_player = Regression(self.engine)
-                # self.black_player.fit(PGN_PATH)
+            elif black_player == "Regression tree":
+                self.black_player = RegressionTreeBot(self.engine)
+            
             elif black_player == "Stockfish":
                 self.black_player = Stockfish(self.engine, elo=200)
                 self.is_stockfish = self.black_player
@@ -666,13 +660,13 @@ class ChessBoard(QWidget):
                 self.black_player = None
 
             # Start the training phase
-            if white_player == "Classifier" or black_player != "Classifier" or white_player == "Regression" or black_player == "Regression":
+            if white_player == "Regression tree" or black_player != "Regression tree":
                 if white_player == "Random bot":
-                    self.start_training(None, self.black_player, pgn_path=PGN_PATH)
+                    self.start_training(None, self.black_player)
                 elif black_player == "Random bot":
-                    self.start_training(self.white_player, None, pgn_path=PGN_PATH)
+                    self.start_training(self.white_player, None)
                 else:
-                    self.start_training(self.white_player, self.black_player, pgn_path=PGN_PATH)
+                    self.start_training(self.white_player, self.black_player)
             else:
                 self.bots_game()
             
@@ -685,15 +679,10 @@ class ChessBoard(QWidget):
             if white_player == "Random bot" or black_player == "Random bot":
                 self.bot = RandomBot(self.engine, bot_color)
 
-            elif white_player == "Classifier" or black_player == "Classifier":
-                self.bot = Classifier(self.engine, self.bot_color)
+            elif white_player == "Regression tree" or black_player == "Regression tree":
+                self.bot = RegressionTreeBot(self.engine)
                 # self.bot.fit(PGN_PATH)
-                self.start_training(self.bot, None, pgn_path=PGN_PATH)
-
-            elif white_player == "Regression" or black_player == "Regression":
-                self.bot = Regression(self.engine)
-                # self.bot.fit(PGN_PATH)
-                self.start_training(self.bot, None, pgn_path=PGN_PATH)
+                self.start_training(self.bot, None)
 
             elif white_player == "Stockfish" or black_player == "Stockfish":
                 self.bot = Stockfish(self.engine, elo=200)
