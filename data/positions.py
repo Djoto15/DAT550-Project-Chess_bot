@@ -4,28 +4,29 @@ import random
 from tqdm import tqdm
 from collections import defaultdict
 
-"""
-TODO: increase the number of games in the filtered-1800 file (40,000 seems fine)
-      change this file to have various positions (oppening with one move up to ten move, correct middlegame and endgame)
-      Well change the entire file to have a good dataset of 50,000 positions
-"""
-
 # === Config ===
 INPUT_PGN = "filtered_1800_pgn.pgn"
 OUTPUT_CSV = "positions.csv"
+NUM_POSITIONS = 50000
 
 TARGET = {
-    "opening": 15000,
-    "middlegame": 30000,
-    "endgame": 5000,
+    "opening": int(0.3 * NUM_POSITIONS),
+    "middlegame": int(0.6 * NUM_POSITIONS),
+    "endgame": int(0.1 * NUM_POSITIONS),
 }
 
-MAX_PLIES_OPENING = 10  # First 10 moves
+MAX_PLIES_OPENING = 10
+MIN_PLIES_OPENING = 2
+OPENING_PLY_STEPS = list(range(MIN_PLIES_OPENING, MAX_PLIES_OPENING + 1, 2))  # [2, 4, 6, 8, 10]
 MAX_PER_ECO = 300
-MIDDLEGAME_MIN_MATERIAL = 15  # Excludes kings
-ENDGAME_MAX_MATERIAL = 14
+MIDDLEGAME_MIN_MATERIAL = 15
+ENDGAME_MAX_MATERIAL = 13
 
-# === Material counter (excluding kings) ===
+MAX_OPENING_PER_GAME = 2
+MAX_MIDDLEGAME_PER_GAME = 3
+MAX_ENDGAME_PER_GAME = 2
+
+# === Helper Functions ===
 def get_material_count(board):
     piece_values = {
         chess.PAWN: 1,
@@ -40,44 +41,24 @@ def get_material_count(board):
         count += len(board.pieces(piece_type, chess.BLACK)) * piece_values[piece_type]
     return count
 
-# === Mobility counter (number of legal moves) ===
-def get_mobility(board):
-    white_mobility = len(list(board.legal_moves))  # White's mobility
-    board.push(chess.Move.null())  # Add a dummy move to check the opponent's mobility
-    black_mobility = len(list(board.legal_moves))
-    board.pop()
-    return white_mobility, black_mobility
+def is_minor_piece_developed(board, color):
+    home_knights = [chess.B1, chess.G1] if color == chess.WHITE else [chess.B8, chess.G8]
+    home_bishops = [chess.C1, chess.F1] if color == chess.WHITE else [chess.C8, chess.F8]
+    for sq in home_knights + home_bishops:
+        piece = board.piece_at(sq)
+        if piece is None or piece.color != color or piece.piece_type not in (chess.KNIGHT, chess.BISHOP):
+            return True
+    return False
 
-
-# === King Safety (simplified pawn structure around the king) ===
-def get_king_safety(board):
-    white_king_pos = board.king(chess.WHITE)
-    black_king_pos = board.king(chess.BLACK)
-    white_safety = count_protecting_pawns(board, white_king_pos, chess.WHITE)
-    black_safety = count_protecting_pawns(board, black_king_pos, chess.BLACK)
-    return white_safety, black_safety
-
-def count_protecting_pawns(board, king_pos, color):
-    # Check how many pawns are protecting the king (from 1 square distance)
-    protecting_pawns = 0
-    for square in chess.SQUARES:
-        if board.piece_at(square) == chess.PAWN and board.color_at(square) == color:
-            if abs(chess.square_rank(square) - chess.square_rank(king_pos)) <= 1 and abs(chess.square_file(square) - chess.square_file(king_pos)) <= 1:
-                protecting_pawns += 1
-    return protecting_pawns
-
-# === Pawn structure (passed pawns) ===
-def get_passed_pawns(board, color):
-    passed_pawns = 0
-    for pawn in board.pieces(chess.PAWN, color):
-        if (color == chess.WHITE and chess.square_rank(pawn) == 6) or (color == chess.BLACK and chess.square_rank(pawn) == 1):
-            passed_pawns += 1
-    return passed_pawns
+def has_material_imbalance(board):
+    piece_counts = lambda color: sum(len(board.pieces(pt, color)) for pt in range(1, 6))
+    return abs(piece_counts(chess.WHITE) - piece_counts(chess.BLACK)) >= 3
 
 # === Storage ===
-eco_openings = defaultdict(list)  # ECO -> list of (fen, eco)
-middlegame_fens = []  # (fen,)
-endgame_fens = []     # (fen,)
+eco_openings = defaultdict(list)
+middlegame_fens = []
+endgame_fens = []
+seen_positions = set()
 
 with open(INPUT_PGN, encoding='utf-8') as pgn:
     pbar = tqdm(total=sum(TARGET.values()))
@@ -91,51 +72,69 @@ with open(INPUT_PGN, encoding='utf-8') as pgn:
         eco = game.headers.get("ECO")
         board = game.board()
         plies = 0
-        phase_assigned = {"opening": False, "middlegame": False, "endgame": False}
+        opening_added = 0
+        middlegame_added = 0
+        endgame_added = 0
+        collected_opening_plies = set()
 
         for move in game.mainline_moves():
             board.push(move)
             plies += 1
             fen = board.fen()
             material = get_material_count(board)
-            white_mobility, black_mobility = get_mobility(board)
-            white_safety, black_safety = get_king_safety(board)
-            white_passed = get_passed_pawns(board, chess.WHITE)
-            black_passed = get_passed_pawns(board, chess.BLACK)
 
-            # --- Opening ---
-            if eco and plies <= MAX_PLIES_OPENING and len(eco_openings[eco]) < MAX_PER_ECO and not phase_assigned["opening"]:
+            if fen in seen_positions:
+                continue
+
+            # Opening position variety by ply
+            if (eco and
+                plies in OPENING_PLY_STEPS and
+                plies not in collected_opening_plies and
+                len(eco_openings[eco]) < MAX_PER_ECO and
+                opening_added < MAX_OPENING_PER_GAME and
+                sum(len(fens) for fens in eco_openings.values()) < TARGET["opening"]):
+
                 eco_openings[eco].append((fen, eco))
-                phase_assigned["opening"] = True
+                collected_opening_plies.add(plies)
+                seen_positions.add(fen)
+                opening_added += 1
                 total_collected += 1
                 pbar.update(1)
+                continue
 
-            # --- Endgame ---
-            elif material <= ENDGAME_MAX_MATERIAL and len(endgame_fens) < TARGET["endgame"] and not phase_assigned["endgame"]:
+            # Endgame position
+            if (material <= ENDGAME_MAX_MATERIAL and
+                len(endgame_fens) < TARGET["endgame"] and
+                endgame_added < MAX_ENDGAME_PER_GAME):
+
                 endgame_fens.append(fen)
-                phase_assigned["endgame"] = True
+                seen_positions.add(fen)
+                endgame_added += 1
                 total_collected += 1
                 pbar.update(1)
+                continue
 
-            # --- Middlegame ---
-            elif material > ENDGAME_MAX_MATERIAL and len(middlegame_fens) < TARGET["middlegame"] and not phase_assigned["middlegame"]:
-                # Detect phase based on the balance of mobility, safety, and passed pawns
-                if (white_mobility > 10 and black_mobility > 10 and
-                    abs(white_safety - black_safety) < 2 and
-                    (white_passed + black_passed < 2)):
-                    middlegame_fens.append(fen)
-                    phase_assigned["middlegame"] = True
-                    total_collected += 1
-                    pbar.update(1)
+            # Middlegame position
+            if (material > ENDGAME_MAX_MATERIAL and
+                len(middlegame_fens) < TARGET["middlegame"] and
+                middlegame_added < MAX_MIDDLEGAME_PER_GAME and
+                is_minor_piece_developed(board, chess.WHITE) and
+                is_minor_piece_developed(board, chess.BLACK) and
+                has_material_imbalance(board)):
 
-            if all([
-                sum(len(fens) for fens in eco_openings.values()) >= TARGET["opening"],
-                len(middlegame_fens) >= TARGET["middlegame"],
-                len(endgame_fens) >= TARGET["endgame"]
-            ]):
+                middlegame_fens.append(fen)
+                seen_positions.add(fen)
+                middlegame_added += 1
+                total_collected += 1
+                pbar.update(1)
+                continue
+
+            if (sum(len(fens) for fens in eco_openings.values()) >= TARGET["opening"] and
+                len(middlegame_fens) >= TARGET["middlegame"] and
+                len(endgame_fens) >= TARGET["endgame"]):
                 break
 
-# === Build the dataset ===
+# === Build final dataset ===
 opening_fens = [(fen, "opening", eco) for eco_fens in eco_openings.values() for (fen, eco) in eco_fens]
 middlegame_fens = [(fen, "middlegame", None) for fen in middlegame_fens]
 endgame_fens = [(fen, "endgame", None) for fen in endgame_fens]
@@ -143,7 +142,6 @@ endgame_fens = [(fen, "endgame", None) for fen in endgame_fens]
 all_fens = opening_fens + middlegame_fens + endgame_fens
 random.shuffle(all_fens)
 
-# === Save to CSV ===
 df = pd.DataFrame(all_fens, columns=["fen", "phase", "eco"])
 df.to_csv(OUTPUT_CSV, index=False)
 
