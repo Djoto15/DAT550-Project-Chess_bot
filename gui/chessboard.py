@@ -36,13 +36,14 @@ class ChessBoard(QWidget):
         self.promotion_widget = PromotionWidget(self)
         self.promotion = None            # keep track of the prev_pos and new_pose for the promotion
 
+        self.evals = []
+
         # Connect the piece_selected signal to a method in this class
         self.promotion_widget.piece_selected.connect(self.handle_promotion)
 
         # Game configuration
         self.initConfig()
         self.initTraining()
-        self.stockfish = Stockfish(self.engine, elo=200)
 
 
 
@@ -308,6 +309,9 @@ class ChessBoard(QWidget):
                         # Check if the game is over
                         self.is_game_over()
 
+                        # Append the evaluation of the board to self.evals
+                        self.evals.append(self.evaluate())
+
                         return
 
             # If clicking on an opponent's piece that can be captured        
@@ -341,6 +345,9 @@ class ChessBoard(QWidget):
 
                         # Check if the game is over
                         self.is_game_over()
+
+                        # Append the evaluation of the board to self.evals
+                        self.evals.append(self.evaluate())
 
                         return
 
@@ -390,6 +397,9 @@ class ChessBoard(QWidget):
                 self.read_board()
 
             self.switch_turn()    # Change player's turn
+
+            # Append the evaluation of the board to self.evals
+            self.evals.append(self.evaluate())
 
         else:
             pass
@@ -717,8 +727,10 @@ class ChessBoard(QWidget):
         """
         Evaluate the chessboard using the StockFish method
         """
-        score = self.stockfish.evaluate(self.engine.board)
-        print(score)
+        with Stockfish(self.engine, elo=200) as stockfish:
+            score = stockfish.evaluate(self.engine.board)
+            # print(score)
+            return score
 
 
     # -------- Game state methods --------
@@ -769,6 +781,3 @@ class ChessBoard(QWidget):
         popup = GameOverPopup(message, parent)
 
         popup.show()
-
-        
-        self.stockfish.close()

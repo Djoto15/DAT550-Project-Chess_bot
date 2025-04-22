@@ -8,7 +8,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from engine import Engine
-from bot import Stockfish, RegressionTreeBot
+from bot import Stockfish, BaseBot
 
 class Evaluation:
     def __init__(self, engine, white_player, black_player, stockfish_engine_path="/usr/games/stockfish"):
@@ -24,9 +24,11 @@ class Evaluation:
         board = self.engine.board
         scores = []
         print("Game has begun...")
+        MAX_MOVES = 80
+        moves = 0
 
         with Stockfish(self.stockfish_engine_path, elo=200) as stockfish:
-            while not board.is_game_over():
+            while not board.is_game_over() and moves < MAX_MOVES:
                 if board.turn == chess.WHITE:
                     white_move = self.white.predict()
                     if white_move is None:
@@ -42,6 +44,9 @@ class Evaluation:
                         break
                     board.push(black_move)
                     scores.append(self.evaluate_board(board, stockfish))
+                moves += 1
+                if moves % 10 == 0:
+                    print(moves)
 
         print("Game is finished.")
         return scores
@@ -91,8 +96,8 @@ engine = Engine()
 # # Define stockfish opponent (uses internal engine path)
 # stockfish_bot = Stockfish(engine, elo=200)
 
-white = RegressionTreeBot(engine)
-black = RegressionTreeBot(engine)
+white = BaseBot(engine)
+black = BaseBot(engine)
 
 white.fit()
 black.fit()
