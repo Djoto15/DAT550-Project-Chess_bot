@@ -37,5 +37,13 @@ dist/
 .env
 
 # files to ignore
-data/lichess_db_standard_rated_2014-09.pgn
+data/data/lichess_db_standard_rated_2014-09.pgn
 filtered_1800_pgn.pgn
+data/data/low_elo_games.pgn
+data/data/positions.csv
+data/data/dataset.csv
+data/data/dataset2.csv
+data/data/dataset3.csv
+data/data/lowELO_dataset.csv
+data/data/lowELO_evaluated.csv
+

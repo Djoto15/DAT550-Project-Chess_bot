@@ -8,7 +8,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from engine import Engine
-from bot import Stockfish, BaseBot
+from bot import Stockfish, BaseBot, LowEloBot, BaseBot2, MinimaxBot
 
 class Evaluation:
     def __init__(self, engine, white_player, black_player, stockfish_engine_path="/usr/games/stockfish"):
@@ -24,7 +24,7 @@ class Evaluation:
         board = self.engine.board
         scores = []
         print("Game has begun...")
-        MAX_MOVES = 80
+        MAX_MOVES = 60
         moves = 0
 
         with Stockfish(self.stockfish_engine_path, elo=200) as stockfish:
@@ -96,8 +96,8 @@ engine = Engine()
 # # Define stockfish opponent (uses internal engine path)
 # stockfish_bot = Stockfish(engine, elo=200)
 
-white = BaseBot(engine)
-black = BaseBot(engine)
+white = BaseBot2(engine) # new bot trained on low elo
+black = BaseBot(engine)    # bot trained on high elo
 
 white.fit()
 black.fit()

@@ -3,7 +3,7 @@ from tqdm import tqdm
 
 # Set paths
 input_pgn_file = "lichess_db_standard_rated_2014-09.pgn"  # has 1,000,056 games
-output_pgn_file = "filtered_1800_pgn.pgn"
+output_pgn_file = "filtered_400to600.pgn"
 
 # Function to check if both players have an ELO >= 1800
 def is_valid_game(headers):
@@ -13,9 +13,13 @@ def is_valid_game(headers):
         return white_elo >= 1800 and black_elo >= 1800
     except:
         return False
+    
+
+
+
 
 # Open input PGN file and output PGN file
-MAX_GAMES = 40000
+MAX_GAMES = 1000
 
 with open(input_pgn_file, encoding='utf-8') as input_pgn, open(output_pgn_file, "w", encoding='utf-8') as output_pgn:
     game_count = 0
@@ -37,6 +41,7 @@ with open(input_pgn_file, encoding='utf-8') as input_pgn, open(output_pgn_file, 
 
         if valid_count >= MAX_GAMES:
             break
+
 
     pbar.close()
     print(f"\n✅ Done! Processed {game_count} total games.")

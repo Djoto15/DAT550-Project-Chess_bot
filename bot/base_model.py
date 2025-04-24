@@ -9,7 +9,7 @@ from sklearn.preprocessing import LabelEncoder
 from collections import defaultdict
 
 class BaseBot:
-    def __init__(self, engine, dataset_path="data/dataset3.csv", max_depth=5):
+    def __init__(self, engine, dataset_path="data/data/dataset3.csv", max_depth=5):
         self.engine = engine
         self.dataset = pd.read_csv(dataset_path)
         self.features = ["material", "mobility", "white_king_safety", "black_king_safety",

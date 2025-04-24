@@ -13,7 +13,7 @@ from gui.promotion import PromotionWidget
 from gui.game_over import GameOverPopup
 
 # Bot import
-from bot import RandomBot, Training, Stockfish, BaseBot
+from bot import LowEloBot, Training, Stockfish, BaseBot, BaseBot2
 
 
 
@@ -297,7 +297,6 @@ class ChessBoard(QWidget):
 
                         if self.isBot and self.current_turn == self.bot_color:
                             QTimer.singleShot(500, lambda: self.play_bot(self.bot))
-                            # self.play_bot()
 
                         # Deselect everything after capturing
                         self.selected_squares = []
@@ -309,8 +308,6 @@ class ChessBoard(QWidget):
                         # Check if the game is over
                         self.is_game_over()
 
-                        # Append the evaluation of the board to self.evals
-                        self.evals.append(self.evaluate())
 
                         return
 
@@ -334,7 +331,6 @@ class ChessBoard(QWidget):
 
                         if self.isBot and self.current_turn == self.bot_color:
                             QTimer.singleShot(500, lambda: self.play_bot(self.bot))
-                            # self.play_bot()
                         
                         # Deselect everything after capturing
                         self.selected_squares = []
@@ -345,9 +341,6 @@ class ChessBoard(QWidget):
 
                         # Check if the game is over
                         self.is_game_over()
-
-                        # Append the evaluation of the board to self.evals
-                        self.evals.append(self.evaluate())
 
                         return
 
@@ -646,10 +639,10 @@ class ChessBoard(QWidget):
         # Manage if this is two bot playing one against the other
         if not self.is_player:
 
-            if white_player == "Random bot":
-                self.white_player = RandomBot(self.engine, "white")
+            if white_player == "Low elo bot":
+                self.white_player = LowEloBot(self.engine)
             elif white_player == "Base bot":
-                self.white_player = BaseBot(self.engine)
+                self.white_player = BaseBot2(self.engine)
             
             elif white_player == "Stockfish":
                 self.white_player = Stockfish(self.engine, elo=200)
@@ -658,10 +651,10 @@ class ChessBoard(QWidget):
                 self.white_player = None
 
 
-            if black_player == "Random bot":
-                self.black_player = RandomBot(self.engine, "black")
+            if black_player == "Low elo bot":
+                self.black_player = LowEloBot(self.engine)
             elif black_player == "Base bot":
-                self.black_player = BaseBot(self.engine)
+                self.black_player = BaseBot2(self.engine)
             
             elif black_player == "Stockfish":
                 self.black_player = Stockfish(self.engine, elo=200)
@@ -671,9 +664,9 @@ class ChessBoard(QWidget):
 
             # Start the training phase
             if white_player == "Base bot" or black_player != "Base bot":
-                if white_player == "Random bot":
+                if white_player == "Low elo bot":
                     self.start_training(None, self.black_player)
-                elif black_player == "Random bot":
+                elif black_player == "Low elo bot":
                     self.start_training(self.white_player, None)
                 else:
                     self.start_training(self.white_player, self.black_player)
@@ -686,11 +679,11 @@ class ChessBoard(QWidget):
             bot_color = "white" if white_player != "Human" else "black"
             self.bot_color = bot_color
 
-            if white_player == "Random bot" or black_player == "Random bot":
-                self.bot = RandomBot(self.engine, bot_color)
+            if white_player == "Low elo bot" or black_player == "Low elo bot":
+                self.bot = LowEloBot(self.engine)
 
             elif white_player == "Base bot" or black_player == "Base bot":
-                self.bot = BaseBot(self.engine)
+                self.bot = BaseBot2(self.engine)
                 # self.bot.fit(PGN_PATH)
                 self.start_training(self.bot, None)
 
@@ -702,6 +695,7 @@ class ChessBoard(QWidget):
 
             if bot_color == "white":
                 self.start_game()
+
 
 
 
