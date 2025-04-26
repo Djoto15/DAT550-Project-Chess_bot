@@ -40,5 +40,7 @@ dist/
 stockfish/
 
 # Ignorer le fichier spécifique "data/dataset_value_net.npz"
-data/dataset_value_net.npz
+data/
+
+WORKING_BOT/
 

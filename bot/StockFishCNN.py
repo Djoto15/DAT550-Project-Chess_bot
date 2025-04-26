@@ -9,6 +9,8 @@ from pathlib import Path
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
+from tqdm import tqdm
+import random
 
 
 # --- Encodeur de plateau (14x8x8 tensor avec coups légaux) ---
@@ -44,6 +46,25 @@ def board_to_tensor(board):
     board.turn = original_turn
     return tensor
 
+# --- Génération de positions absurdes ---
+def generate_blunder_position():
+    board = chess.Board()
+    for _ in range(random.randint(3, 7)):
+        moves = list(board.legal_moves)
+        if moves:
+            board.push(random.choice(moves))
+        else:
+            break
+
+    # Ajoute une dame blanche mal placée
+    if board.piece_at(chess.E4) is None:
+        board.set_piece_at(chess.E4, chess.Piece(chess.QUEEN, chess.WHITE))
+    # Ajoute un pion noir qui attaque
+    if board.piece_at(chess.D5) is None:
+        board.set_piece_at(chess.D5, chess.Piece(chess.PAWN, chess.BLACK))
+
+    return board
+
 
 # --- Réseau CNN ValueNet amélioré ---
 class ValueNet(nn.Module):
@@ -72,7 +93,7 @@ class ValueNet(nn.Module):
 
 
 # --- Extraction et évaluation ---
-def extract_data_with_stockfish(pgn_path, stockfish_path, max_positions=1000, cache_file="data/dataset_value_net.npz"):
+def extract_data_with_stockfish(pgn_path, stockfish_path, max_positions=1000, cache_file="data/dataset_value_net.npz", proportion_blunder=0.2):
     if Path(cache_file).exists():
         print("\n🔁 Chargement des données depuis le cache...")
         data = np.load(cache_file)
@@ -80,37 +101,45 @@ def extract_data_with_stockfish(pgn_path, stockfish_path, max_positions=1000, ca
 
     engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
     X, y = [], []
-    with open(pgn_path, "r") as f:
-        game_count = 0
-        while game_count < max_positions:
-            game = chess.pgn.read_game(f)
-            if game is None:
-                break
-            board = game.board()
-            for move in game.mainline_moves():
-                tensor = board_to_tensor(board)
-                try:
-                    info = engine.analyse(board, chess.engine.Limit(depth=10))
-                    score = info["score"].white().score(mate_score=10000)
-                    if score is not None:
-                        norm_score = max(-1000, min(1000, score)) / 1000
-                        X.append(tensor)
-                        y.append(norm_score)
-                        game_count += 1
-                except Exception as e:
-                    print("Stockfish error:", e)
-                board.push(move)
-                if game_count >= max_positions:
+
+    f = open(pgn_path, "r")
+    game = chess.pgn.read_game(f)
+
+    with tqdm(total=max_positions, desc="🔄 Extraction", unit="pos") as pbar:
+        while len(X) < max_positions:
+            # Décide si on génère une blunder
+            if random.random() < proportion_blunder:
+                board = generate_blunder_position()
+            else:
+                if game is None:
                     break
+                board = game.board()
+                for move in game.mainline_moves():
+                    break
+                game = chess.pgn.read_game(f)
+
+            try:
+                tensor = board_to_tensor(board)
+                info = engine.analyse(board, chess.engine.Limit(depth=10))
+                score = info["score"].white().score(mate_score=10000)
+                if score is not None:
+                    norm_score = max(-1000, min(1000, score)) / 1000
+                    X.append(tensor)
+                    y.append(norm_score)
+                    pbar.update(1)
+            except Exception as e:
+                print("Stockfish error:", e)
+
     engine.quit()
+    f.close()
     X, y = np.array(X), np.array(y)
     np.savez(cache_file, X=X, y=y)
-    print("✅ Données sauvegardées dans", cache_file)
+    print("Données sauvegardées dans", cache_file)
     return X, y
 
 
 # --- Entraînement avec split validation + batchs ---
-def train_value_net(X, y, epochs=10, lr=0.001, batch_size=128):
+def train_value_net(X, y, epochs=10, lr=0.0001, batch_size=128):
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
 
     train_dataset = TensorDataset(torch.tensor(X_train, dtype=torch.float32), torch.tensor(y_train, dtype=torch.float32).unsqueeze(1))
@@ -165,12 +194,28 @@ def train_value_net(X, y, epochs=10, lr=0.001, batch_size=128):
 
 
 if __name__ == "__main__":
-    pgn_path = "data/1800thresh_1448.pgn"  # Remplace par ton fichier PGN
-    stockfish_path = "stockfish/stockfish-windows-x86-64-avx2.exe"  # ⚠️ À modifier !
+    
+    pgn_path = "data\lichess_elite_2025-02.pgn"  # Remplace par ton fichier PGN
+    stockfish_path = "stockfish\stockfish-windows-x86-64-avx2.exe"  
 
-    print("\n📥 Extraction des données avec Stockfish...")
+    print("\n Extraction des données avec Stockfish...")
     X, y = extract_data_with_stockfish(pgn_path, stockfish_path, max_positions=50000)
 
+    
+    '''print("Dataset charge.")
+    print(f"X shape: {X.shape}")       # (N, 14, 8, 8)
+    print(f"y shape: {y.shape}")       # (N,)
+    print(f"y min: {y.min():.3f}, max: {y.max():.3f}, mean: {y.mean():.3f}")
+
+    plt.hist(y, bins=50, color='skyblue')
+    plt.title("Distribution des evaluations Stockfish (y)")
+    plt.xlabel("evaluation normalisee (-1 = noir gagne, +1 = blanc gagne)")
+    plt.ylabel("Nombre de positions")
+    plt.grid(True)
+    plt.show()'''
+
+
+    
     print("\n🧠 Entraînement du ValueNet CNN...")
     model = train_value_net(X, y, epochs=15, batch_size=128)
 
