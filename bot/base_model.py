@@ -1,129 +1,94 @@
-import pandas as pd
-import numpy as np
 import chess
-import chess.engine
-import random
-from tqdm import tqdm
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import LabelEncoder
-from collections import defaultdict
+import pandas as pd
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
 
 class BaseBot:
-    def __init__(self, engine, dataset_path="data/data/dataset3.csv", max_depth=5):
+    def __init__(self, engine):
+        self.clf = DecisionTreeClassifier(random_state=42)
         self.engine = engine
-        self.dataset = pd.read_csv(dataset_path)
-        self.features = ["material", "mobility", "white_king_safety", "black_king_safety",
-                         "white_center_control", "black_center_control", "phase"]
-        self.classifier = RandomForestClassifier(max_depth=max_depth, n_estimators=100)
-        self.label_encoder = LabelEncoder()
-        self.model_fitted = False
-        self.position_counts = defaultdict(int)
 
     def fit(self):
-        df = self.dataset.dropna(subset=["best_move", "evaluation_cp"])
-        X = df[self.features]
-        y = self.label_encoder.fit_transform(df["best_move"])
-        print("Training classifier on best moves...")
-        self.classifier.fit(X, y)
-        self.model_fitted = True
+        """Train the classifier using the precomputed features."""
+        # Load the dataset
+        data = pd.read_csv("data/data/lowELO_evaluated.csv")
+        
+        # Extract features (X) and target labels (y)
+        feature_cols = ['material_diff', 'num_legal_moves', 'is_in_check', 'center_control']
+        X = data[feature_cols]  # Features
+        y = data['move_type']  # Target labels
 
-    def extract_features(self, board, phase="middlegame"):
-        def material_count(b):
-            values = {chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3,
-                      chess.ROOK: 5, chess.QUEEN: 9}
-            return sum(len(b.pieces(pt, chess.WHITE)) * v +
-                       len(b.pieces(pt, chess.BLACK)) * v
-                       for pt, v in values.items())
+        # Split the data into training and testing sets
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-        def mobility(b): return len(list(b.legal_moves))
-        def king_safety(b, color): return 0 if b.king(color) is None else len(b.attackers(not color, b.king(color)))
-        def center_control(b, color): return sum(b.is_attacked_by(color, sq) for sq in [chess.D4, chess.E4, chess.D5, chess.E5])
+        # Train the Decision Tree classifier
+        self.clf.fit(X_train, y_train)
 
-        return [
-            material_count(board),
-            mobility(board),
-            king_safety(board, chess.WHITE),
-            king_safety(board, chess.BLACK),
-            center_control(board, chess.WHITE),
-            center_control(board, chess.BLACK),
-            {"opening": 0, "middlegame": 1, "endgame": 2}[phase]
-        ]
+        # Evaluate the model
+        y_pred = self.clf.predict(X_test)
+        accuracy = accuracy_score(y_test, y_pred)
+        print(f"Training Accuracy: {accuracy * 100:.2f}%")
 
-    def predict(self, phase="middlegame", depth=2):
-        if not self.model_fitted:
-            raise RuntimeError("Model not trained. Run fit() first.")
+    def extract_features(self, board):
+        """Extract features from a chess board for prediction."""
+        material_diff = self.material_value(board)
+        num_legal_moves = len(list(board.legal_moves))
+        is_in_check = int(board.is_check())
+        center_control = self.center_control(board)
+        return [material_diff, num_legal_moves, is_in_check, center_control]
 
+    def material_value(self, board):
+        """Calculate material difference (white - black)."""
+        material_count = 0
+        piece_values = {
+            chess.PAWN: 1,
+            chess.KNIGHT: 3,
+            chess.BISHOP: 3,
+            chess.ROOK: 5,
+            chess.QUEEN: 9,
+        }
+        for piece_type, value in piece_values.items():
+            material_count += len(board.pieces(piece_type, chess.WHITE)) * value
+            material_count -= len(board.pieces(piece_type, chess.BLACK)) * value
+        return material_count
+
+    def center_control(self, board):
+        """Simple center control: number of white pieces controlling D4/D5/E4/E5 minus black pieces."""
+        center_squares = [chess.D4, chess.D5, chess.E4, chess.E5]
+        white_control = 0
+        black_control = 0
+        for square in center_squares:
+            attackers_white = board.attackers(chess.WHITE, square)
+            attackers_black = board.attackers(chess.BLACK, square)
+            white_control += len(attackers_white)
+            black_control += len(attackers_black)
+        return white_control - black_control
+
+    def predict(self):
+        """Predict the best move using the trained classifier."""
         board = self.engine.board
-        features = self.extract_features(board, phase=phase)
-        features_df = pd.DataFrame([features], columns=self.features)
-        probas = self.classifier.predict_proba(features_df)[0]
-
-        # Top 3 predicted moves
-        top_indices = np.argsort(probas)[::-1][:3]
-        top_moves = self.label_encoder.inverse_transform(top_indices)
-
-        legal_uci = [move.uci() for move in board.legal_moves]
-        valid_moves = [uci for uci in top_moves if uci in legal_uci]
-
-        if not valid_moves:
-            # fallback: random legal move
-            return random.choice(list(board.legal_moves))
-
-        best_score = -np.inf if board.turn == chess.WHITE else np.inf
-        best_move = None
-
-        for uci in valid_moves:
-            move = chess.Move.from_uci(uci)
+        move_probabilities = []
+        
+        for move in board.legal_moves:
             board.push(move)
-            score = self.minimax(board, depth - 1, -np.inf, np.inf, not board.turn)
+            features = self.extract_features(board)
+
+            # Convert features to a DataFrame with the same column names as used during training
+            features_df = pd.DataFrame([features], columns=['material_diff', 'num_legal_moves', 'is_in_check', 'center_control'])
+
+            # Predict using the classifier with the DataFrame
+            prediction = self.clf.predict(features_df)
+            move_probabilities.append((move, prediction[0]))
             board.pop()
 
-            if (board.turn == chess.WHITE and score > best_score) or \
-               (board.turn == chess.BLACK and score < best_score):
-                best_score = score
-                best_move = move
-
-        return best_move
-
-    def evaluate(self, board):
-        if board.is_checkmate():
-            return float('inf') if board.turn == chess.BLACK else float('-inf')
-        elif board.is_stalemate() or board.is_insufficient_material():
-            return 0
-
-        # Optional: use a real engine
-        # info = self.engine.analyse(board, chess.engine.Limit(depth=10))
-        # return info["score"].relative.score(mate_score=10000)
-
-        # Or fallback to probability as a weak eval
-        features = self.extract_features(board)
-        features_df = pd.DataFrame([features], columns=self.features)
-        return self.classifier.predict_proba(features_df)[0].max()
-
-
-    def minimax(self, board, depth, alpha, beta, maximizing_player):
-        if depth == 0 or board.is_game_over():
-            return self.evaluate(board)
-
-        if maximizing_player:
-            max_eval = -np.inf
-            for move in board.legal_moves:
-                board.push(move)
-                score = self.minimax(board, depth - 1, alpha, beta, False)
-                board.pop()
-                max_eval = max(max_eval, score)
-                alpha = max(alpha, score)
-                if beta <= alpha:
-                    break
-            return max_eval
+        # Select the move predicted as "good" (move_type=1)
+        good_moves = [m for m in move_probabilities if m[1] == 1]
+        
+        if good_moves:
+            # Pick any good move (could improve by picking randomly or using a secondary evaluation)
+            return good_moves[0][0]
         else:
-            min_eval = np.inf
-            for move in board.legal_moves:
-                board.push(move)
-                score = self.minimax(board, depth - 1, alpha, beta, True)
-                board.pop()
-                min_eval = min(min_eval, score)
-                beta = min(beta, score)
-                if beta <= alpha:
-                    break
-            return min_eval
+            # No move predicted good, fallback: pick any legal move
+            return next(iter(board.legal_moves), None)
+

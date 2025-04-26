@@ -600,7 +600,7 @@ class ChessBoard(QWidget):
         # custom_fen = "8/1P6/8/8/8/8/8/8 w - - 0 1"                                # pawn promotion
         # custom_fen = "1r3Q1r/p3p3/k3p3/2Q1p3/8/2N5/PPPP2P1/R1B2K2 b - - 0 23"
         # custom_fen = "8/6K1/Q7/8/8/8/2p2k2/8"
-        custom_fen = "rn1qkbnr/pp1b2pp/2p2p2/3pp3/4P3/2NB1N2/PPPP1PPP/R1BQ1RK1 b kq - 1 6"
+        custom_fen = "1nbb2n1/2pk1p2/8/pp6/P6r/1PP4R/4P1K1/RN4N1 w - - 1 26"
         self.engine.set_fen(custom_fen)
         self.read_board()
         self.refresh()
@@ -642,6 +642,8 @@ class ChessBoard(QWidget):
             if white_player == "Low elo bot":
                 self.white_player = LowEloBot(self.engine)
             elif white_player == "Base bot":
+                self.white_player = BaseBot(self.engine)
+            elif white_player == "Minimax":
                 self.white_player = BaseBot2(self.engine)
             
             elif white_player == "Stockfish":
@@ -654,6 +656,8 @@ class ChessBoard(QWidget):
             if black_player == "Low elo bot":
                 self.black_player = LowEloBot(self.engine)
             elif black_player == "Base bot":
+                self.black_player = BaseBot(self.engine)
+            elif black_player == "Minimax":
                 self.black_player = BaseBot2(self.engine)
             
             elif black_player == "Stockfish":
@@ -663,7 +667,7 @@ class ChessBoard(QWidget):
                 self.black_player = None
 
             # Start the training phase
-            if white_player == "Base bot" or black_player != "Base bot":
+            if white_player == "Base bot" or black_player != "Base bot" or white_player == "Minimax" or black_player != "Minimax":
                 if white_player == "Low elo bot":
                     self.start_training(None, self.black_player)
                 elif black_player == "Low elo bot":
@@ -683,6 +687,11 @@ class ChessBoard(QWidget):
                 self.bot = LowEloBot(self.engine)
 
             elif white_player == "Base bot" or black_player == "Base bot":
+                self.bot = BaseBot(self.engine)
+                # self.bot.fit(PGN_PATH)
+                self.start_training(self.bot, None)
+
+            elif white_player == "Minimax" or black_player == "Minimax":
                 self.bot = BaseBot2(self.engine)
                 # self.bot.fit(PGN_PATH)
                 self.start_training(self.bot, None)
