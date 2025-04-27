@@ -86,7 +86,6 @@ class BaseBot:
         good_moves = [m for m in move_probabilities if m[1] == 1]
         
         if good_moves:
-            # Pick any good move (could improve by picking randomly or using a secondary evaluation)
             return good_moves[0][0]
         else:
             # No move predicted good, fallback: pick any legal move

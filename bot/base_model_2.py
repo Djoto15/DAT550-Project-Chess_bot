@@ -86,8 +86,8 @@ class BaseBot2:
 
 
 
-    def predict_3moves(self):
-        """Return the 3 most promising moves based on classifier prediction probabilities."""
+    def predict_5moves(self):
+        """Return the 5 most promising moves based on classifier prediction probabilities."""
         board = self.engine.board
         move_scores = []
 
@@ -110,14 +110,14 @@ class BaseBot2:
             move_scores.append((move, proba + bonus))
 
         move_scores.sort(key=lambda x: x[1], reverse=True)
-        top_moves = [move for move, _ in move_scores[:3]]
+        top_moves = [move for move, _ in move_scores[:5]]
         return top_moves
 
 
 
     def predict(self):
-        """Use minimax on the top 3 moves to select the best one."""
-        candidate_moves = self.predict_3moves()
+        """Use minimax on the top 5 moves to select the best one."""
+        candidate_moves = self.predict_5moves()
         if not candidate_moves:
             return next(iter(self.engine.board.legal_moves), None)
 
