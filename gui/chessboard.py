@@ -8,14 +8,13 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import math
 
-from gui.variables import PIECE_IMAGES, WHITE, GREEN, YELLOW, SQUARE_SIZE, RED, PGN_PATH
+from gui.variables import PIECE_IMAGES, WHITE, GREEN, YELLOW, SQUARE_SIZE, RED
 from gui.promotion import PromotionWidget
 from gui.game_over import GameOverPopup
 
 # Bot import
-from bot import RandomBot
-from bot import TreeBot
-from bot import Training
+from bot import LowEloBot, Training, Stockfish, BaseBot, BaseBot2, BaseBot3
+
 
 
 class ChessBoard(QWidget):
@@ -36,6 +35,8 @@ class ChessBoard(QWidget):
 
         self.promotion_widget = PromotionWidget(self)
         self.promotion = None            # keep track of the prev_pos and new_pose for the promotion
+
+        self.evals = []
 
         # Connect the piece_selected signal to a method in this class
         self.promotion_widget.piece_selected.connect(self.handle_promotion)
@@ -296,7 +297,6 @@ class ChessBoard(QWidget):
 
                         if self.isBot and self.current_turn == self.bot_color:
                             QTimer.singleShot(500, lambda: self.play_bot(self.bot))
-                            # self.play_bot()
 
                         # Deselect everything after capturing
                         self.selected_squares = []
@@ -307,6 +307,7 @@ class ChessBoard(QWidget):
 
                         # Check if the game is over
                         self.is_game_over()
+
 
                         return
 
@@ -330,7 +331,6 @@ class ChessBoard(QWidget):
 
                         if self.isBot and self.current_turn == self.bot_color:
                             QTimer.singleShot(500, lambda: self.play_bot(self.bot))
-                            # self.play_bot()
                         
                         # Deselect everything after capturing
                         self.selected_squares = []
@@ -371,7 +371,7 @@ class ChessBoard(QWidget):
         """
         Make the bot move.
         """
-        chess_move = bot.predict()[0] # return the move to do using the python-chess format
+        chess_move = bot.predict() # return the move to do using the python-chess format
         if chess_move:
             # print("there's a move")
             move_uci = chess_move.uci() # string format like "e2e4" or "e7e8q"
@@ -390,6 +390,9 @@ class ChessBoard(QWidget):
                 self.read_board()
 
             self.switch_turn()    # Change player's turn
+
+            # Append the evaluation of the board to self.evals
+            self.evals.append(self.evaluate())
 
         else:
             pass
@@ -424,7 +427,7 @@ class ChessBoard(QWidget):
         QTimer.singleShot(500, play_next_turn)
 
 
-    def start_training(self,pgn_path, White=None, Black=None):
+    def start_training(self, White, Black):
         """ Method to start the training phase """
         def on_training_complete():
             """ Callback method when training is complete """
@@ -439,7 +442,7 @@ class ChessBoard(QWidget):
         self.training_widget.show()
 
         # Initialize and start training
-        self.training = Training(White, Black, pgn_path, self, on_training_complete)
+        self.training = Training(White, Black, on_training_complete)
         self.training.train()
 
 
@@ -597,7 +600,7 @@ class ChessBoard(QWidget):
         # custom_fen = "8/1P6/8/8/8/8/8/8 w - - 0 1"                                # pawn promotion
         # custom_fen = "1r3Q1r/p3p3/k3p3/2Q1p3/8/2N5/PPPP2P1/R1B2K2 b - - 0 23"
         # custom_fen = "8/6K1/Q7/8/8/8/2p2k2/8"
-        custom_fen = "r1bqkbnr/pp1p1ppp/n1p5/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 0 4"
+        custom_fen = "1nbb2n1/2pk1p2/8/pp6/P6r/1PP4R/4P1K1/RN4N1 w - - 1 26"
         self.engine.set_fen(custom_fen)
         self.read_board()
         self.refresh()
@@ -636,27 +639,45 @@ class ChessBoard(QWidget):
         # Manage if this is two bot playing one against the other
         if not self.is_player:
 
-            if white_player == "Random bot":
-                self.white_player = RandomBot(self.engine, "white")
-            elif white_player == "Tree bot":
-                self.white_player = TreeBot(self.engine, "white")
-                # self.white_player.fit("data/1800thresh_1448.pgn")
+            if white_player == "Low elo bot":
+                self.white_player = LowEloBot(self.engine)
+            elif white_player == "Base bot":
+                self.white_player = BaseBot(self.engine)
+            elif white_player == "Minimax":
+                self.white_player = BaseBot2(self.engine)
+            elif white_player == "Random forest":
+                self.white_player = BaseBot3(self.engine)
+            
+            elif white_player == "Stockfish":
+                self.white_player = Stockfish(self.engine, elo=200)
+                self.is_stockfish = self.white_player
             else:
                 self.white_player = None
 
 
-            if black_player == "Random bot":
-                self.black_player = RandomBot(self.engine, "black")
-            elif black_player == "Tree bot":
-                self.black_player = TreeBot(self.engine, "black")
-                # self.black_player.fit("data/1800thresh_1448.pgn")
+            if black_player == "Low elo bot":
+                self.black_player = LowEloBot(self.engine)
+            elif black_player == "Base bot":
+                self.black_player = BaseBot(self.engine)
+            elif black_player == "Minimax":
+                self.black_player = BaseBot2(self.engine)
+            elif black_player == "Random forest":
+                self.black_player = BaseBot3(self.engine)
+            
+            elif black_player == "Stockfish":
+                self.black_player = Stockfish(self.engine, elo=200)
+                self.is_stockfish = self.black_player
             else:
                 self.black_player = None
 
             # Start the training phase
-            if white_player != "Random bot" or black_player != "Random bot":
-                print(self.white_player, self.black_player)
-                self.start_training(pgn_path=PGN_PATH, White=self.white_player, Black=self.black_player)
+            if white_player == "Base bot" or black_player != "Base bot" or white_player == "Minimax" or black_player != "Minimax":
+                if white_player == "Low elo bot":
+                    self.start_training(None, self.black_player)
+                elif black_player == "Low elo bot":
+                    self.start_training(self.white_player, None)
+                else:
+                    self.start_training(self.white_player, self.black_player)
             else:
                 self.bots_game()
             
@@ -666,17 +687,33 @@ class ChessBoard(QWidget):
             bot_color = "white" if white_player != "Human" else "black"
             self.bot_color = bot_color
 
-            if white_player == "Random bot" or black_player == "Random bot":
-                self.bot = RandomBot(self.engine, bot_color)
+            if white_player == "Low elo bot" or black_player == "Low elo bot":
+                self.bot = LowEloBot(self.engine)
 
-            elif white_player == "Tree bot" or black_player == "Tree bot":
-                self.bot = TreeBot(self.engine, bot_color)
-                self.start_training(pgn_path=PGN_PATH, White=self.bot, Black=None)
+            elif white_player == "Base bot" or black_player == "Base bot":
+                self.bot = BaseBot(self.engine)
+                # self.bot.fit(PGN_PATH)
+                self.start_training(self.bot, None)
+
+            elif white_player == "Random forest" or black_player == "Random forest":
+                self.bot = BaseBot3(self.engine)
+                # self.bot.fit(PGN_PATH)
+                self.start_training(self.bot, None)
+
+            elif white_player == "Minimax" or black_player == "Minimax":
+                self.bot = BaseBot2(self.engine)
+                # self.bot.fit(PGN_PATH)
+                self.start_training(self.bot, None)
+
+            elif white_player == "Stockfish" or black_player == "Stockfish":
+                self.bot = Stockfish(self.engine, elo=200)
+                self.is_stockfish = self.bot
 
             self.player_color = "white" if white_player == "Human" else "black"
 
             if bot_color == "white":
                 self.start_game()
+
 
 
 
@@ -697,6 +734,15 @@ class ChessBoard(QWidget):
             self.bots_game()
         else:
             QTimer.singleShot(500, lambda: self.start_game())
+
+    def evaluate(self):
+        """
+        Evaluate the chessboard using the StockFish method
+        """
+        with Stockfish(self.engine, elo=200) as stockfish:
+            score = stockfish.evaluate(self.engine.board)
+            # print(score)
+            return score
 
 
     # -------- Game state methods --------
