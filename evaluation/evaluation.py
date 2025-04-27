@@ -8,7 +8,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from engine import Engine
-from bot import Stockfish, BaseBot, LowEloBot, BaseBot2, MinimaxBot
+from bot import Stockfish
 
 class Evaluation:
     def __init__(self, engine, white_player, black_player, stockfish_engine_path="/usr/games/stockfish"):
@@ -45,8 +45,7 @@ class Evaluation:
                     board.push(black_move)
                     scores.append(self.evaluate_board(board, stockfish))
                 moves += 1
-                if moves % 10 == 0:
-                    print(moves)
+
 
         print("Game is finished.")
         return scores
@@ -85,7 +84,7 @@ class Evaluation:
 # === MAIN ===
 
 # Create engine instance
-engine = Engine()
+# engine = Engine()
 
 # Choose which bot to test:
 
@@ -96,13 +95,13 @@ engine = Engine()
 # # Define stockfish opponent (uses internal engine path)
 # stockfish_bot = Stockfish(engine, elo=200)
 
-white = BaseBot2(engine) # new bot trained on low elo
-black = BaseBot(engine)    # bot trained on high elo
+# white = BaseBot2(engine) # new bot trained on low elo
+# black = BaseBot(engine)    # bot trained on high elo
 
-white.fit()
-black.fit()
+# white.fit()
+# black.fit()
 
-# Run evaluation
-evaluator = Evaluation(engine, white_player=white, black_player=black)
-scores = evaluator.play_game()
-evaluator.draw_scores(scores)
+# # Run evaluation
+# evaluator = Evaluation(engine, white_player=white, black_player=black)
+# scores = evaluator.play_game()
+# evaluator.draw_scores(scores)

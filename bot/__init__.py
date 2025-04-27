@@ -1,6 +1,7 @@
 # from .base_model import BaseBot
 from .base_model import BaseBot
 from .base_model_2 import BaseBot2
+from .base_model_3 import BaseBot3
 
 from .low_elo_bot import LowEloBot
 

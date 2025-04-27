@@ -13,7 +13,7 @@ from gui.promotion import PromotionWidget
 from gui.game_over import GameOverPopup
 
 # Bot import
-from bot import LowEloBot, Training, Stockfish, BaseBot, BaseBot2
+from bot import LowEloBot, Training, Stockfish, BaseBot, BaseBot2, BaseBot3
 
 
 
@@ -645,6 +645,8 @@ class ChessBoard(QWidget):
                 self.white_player = BaseBot(self.engine)
             elif white_player == "Minimax":
                 self.white_player = BaseBot2(self.engine)
+            elif white_player == "Random forest":
+                self.white_player = BaseBot3(self.engine)
             
             elif white_player == "Stockfish":
                 self.white_player = Stockfish(self.engine, elo=200)
@@ -659,6 +661,8 @@ class ChessBoard(QWidget):
                 self.black_player = BaseBot(self.engine)
             elif black_player == "Minimax":
                 self.black_player = BaseBot2(self.engine)
+            elif black_player == "Random forest":
+                self.black_player = BaseBot3(self.engine)
             
             elif black_player == "Stockfish":
                 self.black_player = Stockfish(self.engine, elo=200)
@@ -688,6 +692,11 @@ class ChessBoard(QWidget):
 
             elif white_player == "Base bot" or black_player == "Base bot":
                 self.bot = BaseBot(self.engine)
+                # self.bot.fit(PGN_PATH)
+                self.start_training(self.bot, None)
+
+            elif white_player == "Random forest" or black_player == "Random forest":
+                self.bot = BaseBot3(self.engine)
                 # self.bot.fit(PGN_PATH)
                 self.start_training(self.bot, None)
 
