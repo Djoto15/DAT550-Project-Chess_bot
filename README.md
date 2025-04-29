@@ -33,7 +33,7 @@ pip install chess matplotlib pandas numpy seaborn pyqt5 tqdm zstandard
 If you have another method to create an environment like anaconda, it should work.
 
 <h3>Stockfish evaluator</h3>
-You need to install the stockfish bot in order to evaluate the bots. You can download it on this <a href = https://stockfishchess.org/download/>link</a>
+You need to install the stockfish bot in order to evaluate the bots. You can download it on this <a href = https://stockfishchess.org/download>link</a>
 
 <h3>Notebooks</h3>
 They are several notebooks that are interested to see.
@@ -47,10 +47,11 @@ A GUI has been written to see the bots play in action. It can be launch with the
 <br><br>
 python main.py
 <br><br>
-You can choose the white player and the black player. If it is a two bots game or the white player is a bot, you need to launch the game manually using the "Launch game" command in the menu bar at the top of the window.
+You can choose the white player and the black player. If it is a two bots game or the white player is a bot, you need to launch the game manually using the "Launch game" command in the menu bar at the top of the window.<br><br>
 
-<img src="images/gui.png" alt="Logo" width="300" />
-
+<div>
+    <img src="images/gui.png" alt="Logo" width="300" />
+</div>
 
 
 
