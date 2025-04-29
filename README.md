@@ -25,8 +25,8 @@ The activate the environment:
 </ul>
 
 Then do the following command in your terminal: pip install -r requirements.txt
-If this does not work, just install the mentionned libraries in the file without their version like: 
-<li>pip install chess matplotlib pandas numpy seaborn pyqt5 tqdm zstandard</li>
+If this does not work, just install the mentionned libraries in the file without their version like:<br>
+pip install chess matplotlib pandas numpy seaborn pyqt5 tqdm zstandard
 <br>
 
 If you have another method to create an environment like anaconda, it should work.
@@ -42,7 +42,8 @@ They are several notebooks that are interested to see.
 </ol>
 
 <h3>Graphical user interface</h3>
-A GUI has been written to see the bots play in action. It can be launch with the following command. <br>
+A GUI has been written to see the bots play in action. It can be launch with the following command.
+<br>
 python main.py
 <br>
 You can choose the white player and the black player. If it is a two bots game or the white player is a bot, you need to launch the game manually using the "Launch game" command in the menu bar at the top of the window.
