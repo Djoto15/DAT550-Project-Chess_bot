@@ -27,11 +27,26 @@ The activate the environment:
 Then do the following command in your terminal: pip install -r requirements.txt
 If this does not work, just install the mentionned libraries in the file without their version like: 
 <li>pip install chess matplotlib pandas numpy seaborn pyqt5 tqdm zstandard</li>
+<br>
 
 If you have another method to create an environment like anaconda, it should work.
 
 <h3>Stockfish evaluator</h3>
 You need to install the stockfish bot in order to evaluate the bots. You can download it on this <a href = https://stockfishchess.org/download/>link</a>
+
+<h3>Notebooks</h3>
+They are several notebooks that are interested to see.
+<ol>
+<li>lowELO.ipynb is a notebook where the low ELO dataset is generated.</li>
+<li>evaluation.ipynb import the differents baseline bots, train them and evaluate them.</li>
+</ol>
+
+<h3>Graphical user interface</h3>
+A GUI has been written to see the bots play in action. It can be launch with the following command. <br>
+python main.py
+<br>
+You can choose the white player and the black player. If it is a two bots game or the white player is a bot, you need to launch the game manually using the "Launch game" command in the menu bar at the top of the window.
+
 
 
 
