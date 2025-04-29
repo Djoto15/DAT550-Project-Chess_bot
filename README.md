@@ -1,9 +1,38 @@
-# DAT550-Project-Chess_bot
+<h1>DAT550-Project-Chess_bot</h1>
 A repository for a UiS project.
 
-Members: Raphaël Gauthier
+Members: Raphaël Gauthier, Harry Chicheortiche, Ronald Paleczny
 
-The project consists of designing a chess bot. 
+The project consists of designing a chess bot through several methods:
+<ul>
+Four baseline models using decision tree, random forest and a Monte-Carlo Tree Search.
+Two complex models using CNN
+</ul>
 
-### First Step
-We used the python library python-chess for the basic of the engine. We also used PyQt5 to design a Graphical User Interface (GUI) for a better comprehension and visualisation of our work.
+The following explains how to use the code we wrote.
+
+### First installation steps
+First, you need to clone the repository into a direction on your computer using https or SSH. Then install the needed libraires. The recommended method is to create a virtual environment with:
+<ul>
+python -m venv .venv (Windows)
+python3 -m venv .venv (Linux)
+</ul>
+
+The activate the environment:
+<ul>
+source .venv/bin/activate (Linux)
+source .venv/Scripts/activate (Windows + bash terminal)
+</ul>
+
+Then do the following command in your terminal: pip install -r requirements.txt
+If this does not work, just install the mentionned libraries in the file without their version like: 
+- pip install chess matplotlib pandas numpy seaborn pyqt5 tqdm zstandard
+
+If you have another method to create an environment like anaconda, it should work.
+
+<h3>Stockfish evaluator</h3>
+You need to install the stockfish bot in order to evaluate the bots. You can download it on this <a href = https://stockfishchess.org/download/>link</a>
+
+
+
+

@@ -58,7 +58,7 @@ class Stockfish:
             print(f"[Stockfish Evaluate] Error: {e}")
             return 0.0
 
-    def fit(self, pgn_path):
+    def fit(self):
         # Not used for Stockfish, but included for interface consistency
         pass
 
