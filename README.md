@@ -11,7 +11,7 @@ The project consists of designing a chess bot through several methods:
 
 The following explains how to use the code we wrote.
 
-### First installation steps
+<h3>First installation steps</h3>
 First, you need to clone the repository into a direction on your computer using https or SSH. Then install the needed libraires. The recommended method is to create a virtual environment with:
 <ul>
     <li>python -m venv .venv (Windows)</li>
@@ -25,7 +25,8 @@ The activate the environment:
 </ul>
 
 Then do the following command in your terminal: pip install -r requirements.txt
-If this does not work, just install the mentionned libraries in the file without their version like:<br>
+If this does not work, just install the mentionned libraries in the file without their version like:
+<br><br>
 pip install chess matplotlib pandas numpy seaborn pyqt5 tqdm zstandard
 <br>
 
@@ -37,16 +38,19 @@ You need to install the stockfish bot in order to evaluate the bots. You can dow
 <h3>Notebooks</h3>
 They are several notebooks that are interested to see.
 <ol>
-<li>lowELO.ipynb is a notebook where the low ELO dataset is generated.</li>
-<li>evaluation.ipynb import the differents baseline bots, train them and evaluate them.</li>
+    <li>lowELO.ipynb is a notebook where the low ELO dataset is generated.</li>
+    <li>evaluation.ipynb import the differents baseline bots, train them and evaluate them.</li>
 </ol>
 
 <h3>Graphical user interface</h3>
 A GUI has been written to see the bots play in action. It can be launch with the following command.
-<br>
+<br><br>
 python main.py
-<br>
+<br><br>
 You can choose the white player and the black player. If it is a two bots game or the white player is a bot, you need to launch the game manually using the "Launch game" command in the menu bar at the top of the window.
+
+<img src="images/gui.png" alt="Logo" width="300" />
+
 
 
 
