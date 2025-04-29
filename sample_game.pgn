@@ -1,0 +1,10 @@
+[Event "ChessBot self-play"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "?"]
+[Black "?"]
+[Result "*"]
+
+1. d4 Na6 2. e3 g5 3. d5 c6 4. Bd2 e5 5. Ne2 d6 6. Ng1 Qb6 7. Qg4 Nc5 8. f3 Qb3 9. Bc3 Qxc2 10. Ba5 Bf5 11. Nc3 h5 12. Qh3 Ne7 13. Rc1 Qxc3+ 14. bxc3 Rc8 15. Bb6 f6 16. Ke2 axb6 17. g4 Bxg4 18. Kd2 e4 19. Bg2 Rh7 20. Ke2 Kd7 21. a4 Rh8 22. dxc6+ Nxc6 23. Rf1 Rb8 24. Ra1 Ne6 25. Qxh5 f5 26. Rb1 exf3+ 27. Kd2 Nc5 28. Ra1 Kc7 29. Qxh8 Re8 30. Kc1 Rb8 *
+
