@@ -1,0 +1,1 @@
+from .Policy_Value_BOT import SmartChessBot

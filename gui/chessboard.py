@@ -14,6 +14,7 @@ from gui.game_over import GameOverPopup
 
 # Bot import
 from bot import LowEloBot, Training, Stockfish, BaseBot, BaseBot2, BaseBot3
+from complex_model import SmartChessBot
 
 
 
@@ -458,11 +459,11 @@ class ChessBoard(QWidget):
         # print("HELLO")
         self.isComplex = True   # telling the class that there is a complex bot (for the play_bot method)
         if type == "bot":
-            self.bot = None # construct the bot object
+            self.bot = SmartChessBot("complex_model/policy_net_model.pt", "complex_model/value_net_model.pt" ) # construct the bot object
         elif type == "white":
-            self.white_player = None
+            self.white_player = SmartChessBot("complex_model/policy_net_model.pt", "complex_model/value_net_model.pt" )
         elif type == "black":
-            self.black_player = None
+            self.black_player = SmartChessBot("complex_model/policy_net_model.pt", "complex_model/value_net_model.pt" )
 
 
 

@@ -28,7 +28,7 @@ The activate the environment:
 Then do the following command in your terminal: pip install -r requirements.txt
 If this does not work, just install the mentionned libraries in the file without their version like:
 <br><br>
-pip install chess matplotlib pandas numpy seaborn pyqt5 tqdm zstandard
+pip install chess matplotlib pandas numpy seaborn pyqt5 tqdm zstandard torch
 <br>
 
 If you have another method to create an environment like anaconda, it should work.
