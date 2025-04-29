@@ -49,7 +49,7 @@ python main.py
 <br><br>
 You can choose the white player and the black player. If it is a two bots game or the white player is a bot, you need to launch the game manually using the "Launch game" command in the menu bar at the top of the window.<br><br>
 
-<div>
+<div style="text-align: center;">
     <img src="images/gui.png" alt="Logo" width="300" />
 </div>
 
