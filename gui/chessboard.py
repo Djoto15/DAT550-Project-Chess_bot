@@ -41,6 +41,8 @@ class ChessBoard(QWidget):
         # Connect the piece_selected signal to a method in this class
         self.promotion_widget.piece_selected.connect(self.handle_promotion)
 
+        self.isComplex = False
+
         # Game configuration
         self.initConfig()
         self.initTraining()
@@ -371,7 +373,10 @@ class ChessBoard(QWidget):
         """
         Make the bot move.
         """
-        chess_move = bot.predict() # return the move to do using the python-chess format
+        if self.isComplex:
+            chess_move = bot.predict(self.engine.board)
+        else:
+            chess_move = bot.predict() # return the move to do using the python-chess format
         if chess_move:
             # print("there's a move")
             move_uci = chess_move.uci() # string format like "e2e4" or "e7e8q"
@@ -444,6 +449,20 @@ class ChessBoard(QWidget):
         # Initialize and start training
         self.training = Training(White, Black, on_training_complete)
         self.training.train()
+
+
+    def complex_model(self, type):
+        """
+        Launch the complex model.
+        """
+        # print("HELLO")
+        self.isComplex = True   # telling the class that there is a complex bot (for the play_bot method)
+        if type == "bot":
+            self.bot = None # construct the bot object
+        elif type == "white":
+            self.white_player = None
+        elif type == "black":
+            self.black_player = None
 
 
 
@@ -647,6 +666,8 @@ class ChessBoard(QWidget):
                 self.white_player = BaseBot2(self.engine)
             elif white_player == "Random forest":
                 self.white_player = BaseBot3(self.engine)
+            elif white_player == "Complex bot":
+                self.complex_model("white")
             
             elif white_player == "Stockfish":
                 self.white_player = Stockfish(self.engine, elo=200)
@@ -663,6 +684,8 @@ class ChessBoard(QWidget):
                 self.black_player = BaseBot2(self.engine)
             elif black_player == "Random forest":
                 self.black_player = BaseBot3(self.engine)
+            elif black_player == "Complex bot":
+                self.complex_model("black")
             
             elif black_player == "Stockfish":
                 self.black_player = Stockfish(self.engine, elo=200)
@@ -704,6 +727,9 @@ class ChessBoard(QWidget):
                 self.bot = BaseBot2(self.engine)
                 # self.bot.fit(PGN_PATH)
                 self.start_training(self.bot, None)
+
+            elif white_player == "Complex bot" or black_player == "Complex bot":
+                self.complex_model("bot")
 
             elif white_player == "Stockfish" or black_player == "Stockfish":
                 self.bot = Stockfish(self.engine, elo=200)

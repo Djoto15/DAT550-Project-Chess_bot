@@ -13,6 +13,7 @@ The following explains how to use the code we wrote.
 
 <h3>First installation steps</h3>
 First, you need to clone the repository into a direction on your computer using https or SSH. Then install the needed libraires. The recommended method is to create a virtual environment with:
+<br>
 <ul>
     <li>python -m venv .venv (Windows)</li>
     <li>python3 -m venv .venv (Linux)</li>
