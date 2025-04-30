@@ -79,7 +79,7 @@ You can choose the white player and the black player. If it is a two bots game, 
     <img src="images/gui.png" alt="Logo" width="300" />
 </div>
 
-There are several actions in the menus at the top of the window. You can save the game once played into a pgn file, evaluate the game whiwh will show you a graph with the CP scores for the entire game or a debbug game which will set a specific position that you can change in the chessboard.py file (gui folder) at the line 620.<br>
+There are several actions in the menus at the top of the window. You can save the game once played into a pgn file, evaluate the game which will show you a graph with the CP scores for the entire game or a debbug game which will set a specific position that you can change in the chessboard.py file (gui folder) at the line 620.<br>
 The evaluate game action takes a little time to run (few seconds) and will freeze the pyqt5 window during that time.
 <br><br>
 
