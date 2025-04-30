@@ -67,22 +67,24 @@ class Engine():
     def move_piece(self, move):
         """Do the move."""
         valid_move = chess.Move.from_uci(move)
-        self.board.push(valid_move)
 
-        if self.is_checkmate():
-            self.checkmate = True
-            self.game_over = True
-            print("Checkmate!")
+        if valid_move in self.legal_moves():
+            self.board.push(valid_move)
 
-        elif self.is_stalemate():
-            self.stalemate = True
-            self.game_over = True
-            print("Stalemate !")
+            if self.is_checkmate():
+                self.checkmate = True
+                self.game_over = True
+                print("Checkmate!")
 
-        elif self.is_insufficient_material():
-            self.insufficient_material = True
-            self.game_over = True
-            print("Insufficient material !")
+            elif self.is_stalemate():
+                self.stalemate = True
+                self.game_over = True
+                print("Stalemate !")
+
+            elif self.is_insufficient_material():
+                self.insufficient_material = True
+                self.game_over = True
+                print("Insufficient material !")
 
 
 
