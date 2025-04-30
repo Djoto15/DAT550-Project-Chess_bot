@@ -17,7 +17,7 @@ from gui.game_over import GameOverPopup
 from evaluation import Evaluation
 
 # Bot import
-from bot import LowEloBot, Training, Stockfish, BaseBot, BaseBot2, BaseBot3
+from baseline_model import LowEloBot, Training, Stockfish, BaseBot, BaseBot2, BaseBot3
 from complex_model import SmartChessBot
 
 

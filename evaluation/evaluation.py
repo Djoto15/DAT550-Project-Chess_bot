@@ -9,7 +9,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from engine import Engine
-from bot import Stockfish
+from baseline_model import Stockfish
 
 class Evaluation:
     def __init__(self, engine, white_player, black_player, stockfish_engine_path="/usr/games/stockfish"):

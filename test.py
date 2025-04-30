@@ -8,7 +8,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from engine import Engine
-from bot import Stockfish, RegressionTreeBot
+from baseline_model import Stockfish, RegressionTreeBot
 
 if __name__ == "__main__":
     engine = Engine()
