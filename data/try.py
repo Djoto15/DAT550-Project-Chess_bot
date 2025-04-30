@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
-df = pd.read_csv("positions.csv")
+df = pd.read_csv("data/dataset.csv")
 # print(df.head())
 # print(df["phase"].value_counts())
 
