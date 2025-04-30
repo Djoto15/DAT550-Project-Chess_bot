@@ -24,7 +24,6 @@ Linux:
 ```bash
 python3 -m venv .venv
 ```
-<br><br>
 Then activate the environment:
 Windows + bash terminal:
 ```bash
@@ -45,13 +44,15 @@ pip install chess matplotlib pandas numpy seaborn pyqt5 tqdm zstandard torch
 <br>
 
 If you have another method to create an environment like anaconda, it should work.
+<br><br>
 
 <h3>Stockfish evaluator</h3>
 You need to install the stockfish bot in order to evaluate the bots. You can download it on this <a href = https://stockfishchess.org/download>link</a>
-<br><br>
+<br>
 Then you have to change the stockfish path in the stockfish.py file in the bot folder.
-<br><br>
+<br>
 If you just want to see how the bots performed against each other or yourself, you should be able to do that without installing stockfish.
+<br><br>
 
 <h3>Notebooks</h3>
 They are several notebooks that are interested to see.
@@ -59,17 +60,19 @@ They are several notebooks that are interested to see.
     <li>lowELO.ipynb is a notebook where the low ELO dataset is generated.</li>
     <li>evaluation.ipynb import the differents baseline bots, train them and evaluate them.</li>
 </ol>
+<br><br>
+
 
 <h3>Graphical user interface</h3>
 A GUI has been written to see the bots play in action. It can be launch with the following command.
-<br><br>
+<br>
 
 ```bash
 python main.py
 ```
 
 
-<br><br>
+<br>
 You can choose the white player and the black player. If it is a two bots game, you need to launch the game manually using the "Launch game" command in the menu bar at the top of the window.<br><br>
 
 <div style="text-align: center;">
@@ -87,7 +90,7 @@ Run the file <i>evaluate_vs_stockfish.py</i> in order to plot the success rate o
 
 <h3>Complex Models - Neural Networks</h3>
 
-
+<br><br>
 
 ##  Train the ValueNet
 
@@ -104,7 +107,7 @@ What it does:
 
 > ⚠️ Make sure you set the correct path to Stockfish in the script.
 
----
+<br><br>
 
 ##  Train the PolicyNet
 
@@ -119,7 +122,7 @@ What it does:
 - Saves the model as `policy_net_model.pt`.
 - Displays training & validation accuracy/loss curves.
 
----
+<br><br>
 
 ##  Compare Policy vs Policy+Value
 
@@ -134,8 +137,7 @@ What it does:
 - Plots the distribution of evaluation **errors** relative to the best move.
 - Shows the **impact of ValueNet on move quality**.
 
----
-
+<br><br>
 ##  Hybrid Bot Inference (playable)
 
 The file `Policy_Value_BOT.py` defines the class `SmartChessBot`, which:
@@ -143,10 +145,13 @@ The file `Policy_Value_BOT.py` defines the class `SmartChessBot`, which:
 - Ranks them using `ValueNet`,
 - Selects the most promising one.
 
+<br><br>
+
 ##  Auxiliary Functions
 
 Usefull functions for all complex_models files
 
+<br><br>
 
 ## 📌 Notes
 
