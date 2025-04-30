@@ -40,6 +40,7 @@ class ChessBoard(QWidget):
 
         self.promotion_widget = PromotionWidget(self)
         self.promotion = None            # keep track of the prev_pos and new_pose for the promotion
+        self.isPromoting = False
 
         self.evaluator = Evaluation(self.engine, None, None)
         self.count = 0
@@ -378,7 +379,7 @@ class ChessBoard(QWidget):
         """
         Make the bot move.
         """
-        if not self.is_game_over():
+        if not self.is_game_over() and not self.isPromoting:
         
             chess_move = bot.predict() # return the move to do using the python-chess format
             if chess_move:
@@ -409,6 +410,7 @@ class ChessBoard(QWidget):
         """
         Handle a full game with two bots playing, alternating between them with a delay.
         """
+        print("Bots game started.")
         # We want to control when to call play_bot using a QTimer
         def play_next_turn():
             if self.count > 75:
@@ -483,6 +485,7 @@ class ChessBoard(QWidget):
         Move piece to the new_pos.
         """
         if piece == 'p' and new_pos[0] == 7 or piece == 'P' and new_pos[0] == 0:    # when there's a promotion
+            self.isPromoting = True
             self.promotion_pending = True
             self.promotion = [prev_pos, new_pos]
             self.pawn_promotion(new_pos)
@@ -582,9 +585,10 @@ class ChessBoard(QWidget):
         self.read_board()
         self.refresh()
 
+        self.isPromoting = False
+
         if self.isBot:
             QTimer.singleShot(500, lambda: self.play_bot(self.bot))
-            # self.play_bot()
         
 
 
@@ -715,17 +719,14 @@ class ChessBoard(QWidget):
 
             elif white_player == "Base bot" or black_player == "Base bot":
                 self.bot = BaseBot(self.engine)
-                # self.bot.fit(PGN_PATH)
                 self.start_training(self.bot, None)
 
             elif white_player == "Random forest" or black_player == "Random forest":
                 self.bot = BaseBot3(self.engine)
-                # self.bot.fit(PGN_PATH)
                 self.start_training(self.bot, None)
 
             elif white_player == "Minimax" or black_player == "Minimax":
                 self.bot = BaseBot2(self.engine)
-                # self.bot.fit(PGN_PATH)
                 self.start_training(self.bot, None)
 
             elif white_player == "Complex bot" or black_player == "Complex bot":
@@ -737,8 +738,6 @@ class ChessBoard(QWidget):
 
             self.player_color = "white" if white_player == "Human" else "black"
 
-            if bot_color == "white":
-                self.start_game()
 
 
 
