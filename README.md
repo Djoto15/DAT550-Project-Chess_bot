@@ -1,7 +1,7 @@
 <h1>DAT550-Project-Chess_bot</h1>
 A repository for a UiS project.
 
-Members: Raphaël Gauthier, Harry Chicheortiche, Ronald Paleczny
+Members: Raphaël Gauthier, Harry Chicheportiche, Ronald Paleczny
 
 The project consists of designing a chess bot through several methods:
 <ul>
