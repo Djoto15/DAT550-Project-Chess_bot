@@ -24,7 +24,7 @@ Linux:
 ```bash
 python3 -m venv .venv
 ```
-
+<br><br>
 Then activate the environment:
 Windows + bash terminal:
 ```bash
@@ -38,7 +38,6 @@ source .venv/bin/activate
 
 Then do the following command in your terminal: pip install -r requirements.txt
 If this does not work, just install the mentionned libraries in the file without their version like:
-<br><br>
 
 ```bash
 pip install chess matplotlib pandas numpy seaborn pyqt5 tqdm zstandard torch
