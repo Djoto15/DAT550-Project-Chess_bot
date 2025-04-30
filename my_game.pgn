@@ -2,8 +2,8 @@
 [Site "?"]
 [Date "????.??.??"]
 [Round "?"]
-[White "Human"]
-[Black "Human"]
+[White "Complex bot"]
+[Black "Random forest"]
 [Result "*"]
 
-1. e4 e5 2. Qh5 g6 3. Qxe5+ Be7 4. Qxh8 Bf6 5. Qxg8+ Ke7 6. Qxh7 g5 7. f4 gxf4 8. Nf3 Bd4 9. Bc4 b5 10. Bd5 c6 11. Bxf7 Kf8 12. Qg8+ Ke7 13. Qg5+ Kf8 14. Qxd8+ Kxf7 15. Ng5+ Kg7 16. Qe7+ Kg8 17. Qf7+ Kh8 18. Qh7# *
+1. e4 f5 2. Nc3 e6 3. d4 fxe4 4. d5 e3 5. dxe6 Bc5 6. h3 d5 7. a4 exf2+ 8. Ke2 Ne7 9. Ne4 Bxe6 10. Nf3 dxe4 11. Rg1 Bc4+ 12. Qd3 fxg1=N+ 13. Ke1 Nd7 14. b3 Bxb3 15. Nxg1 Bxc2 16. Qxc2 Bxg1 17. Rb1 Rg8 18. Bd2 Rh8 19. Bc1 Rf8 20. Bd2 Bf2+ 21. Kd1 Rf3 22. gxf3 Nc5 23. fxe4 Qxd2+ 24. Qxd2 Nd3 25. Qxf2 Nb2+ 26. Kc2 Kd8 27. h4 Ke8 28. a5 Kd7 29. Ra1 Nf5 30. Qf4 Ne3+ 31. Qxe3 Kc6 32. h5 Rh8 33. Qf2 Kd7 34. Qe3 Nc4 35. Rb1 Na3+ 36. Kb3 Nxb1 37. Ka4 Re8 38. Qd4+ Kc8 *

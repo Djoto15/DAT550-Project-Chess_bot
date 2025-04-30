@@ -42,6 +42,7 @@ class ChessBoard(QWidget):
         self.promotion = None            # keep track of the prev_pos and new_pose for the promotion
 
         self.evaluator = Evaluation(self.engine, None, None)
+        self.count = 0
 
 
         # Connect the piece_selected signal to a method in this class
@@ -377,30 +378,31 @@ class ChessBoard(QWidget):
         """
         Make the bot move.
         """
+        if not self.is_game_over():
         
-        chess_move = bot.predict() # return the move to do using the python-chess format
-        if chess_move:
-            # print("there's a move")
-            move_uci = chess_move.uci() # string format like "e2e4" or "e7e8q"
+            chess_move = bot.predict() # return the move to do using the python-chess format
+            if chess_move:
+                # print("there's a move")
+                move_uci = chess_move.uci() # string format like "e2e4" or "e7e8q"
 
-            # Transform the move format for the gui
-            prev_pos = self.back_front.cases[move_uci[:2]]
-            new_pos = self.back_front.cases[move_uci[2:4]]
-            piece = self.front_board[prev_pos[0]][prev_pos[1]]
-            self.front_board[prev_pos[0]][prev_pos[1]] = 0
-            self.refresh()
+                # Transform the move format for the gui
+                prev_pos = self.back_front.cases[move_uci[:2]]
+                new_pos = self.back_front.cases[move_uci[2:4]]
+                piece = self.front_board[prev_pos[0]][prev_pos[1]]
+                self.front_board[prev_pos[0]][prev_pos[1]] = 0
+                self.refresh()
 
-            if len(move_uci) < 5:   # if not a pawn promotion
-                self.move_piece(piece, prev_pos, new_pos)
+                if len(move_uci) < 5:   # if not a pawn promotion
+                    self.move_piece(piece, prev_pos, new_pos)
+                else:
+                    self.engine.move_piece(move_uci)
+                    self.read_board()
+
+                self.switch_turn()    # Change player's turn
+
+
             else:
-                self.engine.move_piece(move_uci)
-                self.read_board()
-
-            self.switch_turn()    # Change player's turn
-
-
-        else:
-            pass
+                pass
 
 
     def bots_game(self):
@@ -409,21 +411,21 @@ class ChessBoard(QWidget):
         """
         # We want to control when to call play_bot using a QTimer
         def play_next_turn():
-            # print("next turn")
+            if self.count > 75:
+                print("Draw !")
+                return None
+
             if self.current_turn == "white":
-                # print(f"White's turn: {self.current_turn}")
                 self.play_bot(self.white_player)  # Make White's move
                 self.refresh()
-                # print(f"Turn after White: {self.current_turn}")
             
             elif self.current_turn == "black":
-                # print(f"Black's turn: {self.current_turn}")
                 self.play_bot(self.black_player)  # Make Black's move
                 self.refresh()
-                # print(f"Turn after Black: {self.current_turn}")
             
             # Set up the next turn after a delay (500ms) 
             if not self.engine.is_game_over():  # Check if the game is over
+                self.count += 1
                 QTimer.singleShot(500, play_next_turn)  # Delay before the next move
             else:
                 self.is_game_over()
@@ -599,6 +601,7 @@ class ChessBoard(QWidget):
         self.selected_squares = []
         self.highlighted_square = []
         self.legal_moves = []
+        self.count = 0
 
         self.current_turn = "white"
 
@@ -827,6 +830,9 @@ class ChessBoard(QWidget):
             winner = "White" if self.current_turn == "black" else "Black"
             
             self.show_game_over_message(status, winner, self)
+
+            return True
+        return False
 
 
     def show_game_over_message(self, status, winner=None, parent=None):
