@@ -9,3 +9,4 @@ scipy==1.15.2
 seaborn==0.13.2
 tqdm==4.67.1
 zstandard==0.23.0
+torch==2.7.0
