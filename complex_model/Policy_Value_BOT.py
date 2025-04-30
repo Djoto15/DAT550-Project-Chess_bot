@@ -8,7 +8,7 @@ from complex_model.auxiliary_function import *
 
 
 class SmartChessBot:
-    def __init__(self, policy_path, value_path, top_k=5):
+    def __init__(self, engine, policy_path, value_path, top_k=5):
         self.policy_net = PolicyNet()
         self.policy_net.load_state_dict(torch.load(policy_path, map_location=torch.device('cpu')))
         self.policy_net.eval()
@@ -18,8 +18,10 @@ class SmartChessBot:
         self.value_net.eval()
 
         self.top_k = top_k
+        self.engine = engine
 
-    def predict(self, board):
+    def predict(self):
+        board = self.engine.board
         # --- Step 1 : Is there mate ?
         mate_move = find_mate_in_1_or_2(board)
         if mate_move:
@@ -58,4 +60,7 @@ class SmartChessBot:
                 best_move = move
 
         return best_move if best_move else random.choice(legal_moves)
+    
+    def fit(self):
+        pass
     

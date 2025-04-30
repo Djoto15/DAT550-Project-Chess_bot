@@ -19,6 +19,26 @@ class Evaluation:
 
     def evaluate_board(self, board, stockfish):
         return stockfish.evaluate(board)
+    
+    def evaluate_game(self, game_path):
+        # Load PGN game
+        with open(game_path) as pgn:
+            game = chess.pgn.read_game(pgn)
+
+        board = game.board()
+        evaluations = []
+
+        for i, move in enumerate(game.mainline_moves()):
+            board.push(move)
+
+            with Stockfish(self.stockfish_engine_path, elo=200) as stockfish:
+                eval_info = self.evaluate_board(board, stockfish)
+                evaluations.append(eval_info)
+
+        self.draw_scores(evaluations)
+
+
+
 
     def play_game(self):
         board = self.engine.board
@@ -79,29 +99,3 @@ class Evaluation:
         ax.tick_params(colors='#bbbbbb')
         plt.tight_layout()
         plt.show()
-
-
-# === MAIN ===
-
-# Create engine instance
-# engine = Engine()
-
-# Choose which bot to test:
-
-
-# regression_tree_bot = RegressionTreeBot(engine)
-# regression_tree_bot.fit()
-
-# # Define stockfish opponent (uses internal engine path)
-# stockfish_bot = Stockfish(engine, elo=200)
-
-# white = BaseBot2(engine) # new bot trained on low elo
-# black = BaseBot(engine)    # bot trained on high elo
-
-# white.fit()
-# black.fit()
-
-# # Run evaluation
-# evaluator = Evaluation(engine, white_player=white, black_player=black)
-# scores = evaluator.play_game()
-# evaluator.draw_scores(scores)

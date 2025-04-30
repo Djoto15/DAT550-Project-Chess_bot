@@ -1,16 +1,20 @@
-from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QLabel, QAction, QVBoxLayout, QDialog, QSpacerItem, QSizePolicy
-from PyQt5.QtGui import QPalette, QColor, QPainter, QPainterPath, QPixmap
-from PyQt5.QtCore import Qt, QPropertyAnimation, QPoint, pyqtSignal, QTimer
+from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
+from PyQt5.QtGui import QColor, QPainter, QPainterPath, QPixmap
+from PyQt5.QtCore import Qt, QPropertyAnimation, QPoint, QTimer
 
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import math
+import chess.pgn
+import io
 
 from gui.variables import PIECE_IMAGES, WHITE, GREEN, YELLOW, SQUARE_SIZE, RED
 from gui.promotion import PromotionWidget
 from gui.game_over import GameOverPopup
+
+from evaluation import Evaluation
 
 # Bot import
 from bot import LowEloBot, Training, Stockfish, BaseBot, BaseBot2, BaseBot3
@@ -37,12 +41,11 @@ class ChessBoard(QWidget):
         self.promotion_widget = PromotionWidget(self)
         self.promotion = None            # keep track of the prev_pos and new_pose for the promotion
 
-        self.evals = []
+        self.evaluator = Evaluation(self.engine, None, None)
+
 
         # Connect the piece_selected signal to a method in this class
         self.promotion_widget.piece_selected.connect(self.handle_promotion)
-
-        self.isComplex = False
 
         # Game configuration
         self.initConfig()
@@ -374,10 +377,8 @@ class ChessBoard(QWidget):
         """
         Make the bot move.
         """
-        if self.isComplex:
-            chess_move = bot.predict(self.engine.board)
-        else:
-            chess_move = bot.predict() # return the move to do using the python-chess format
+        
+        chess_move = bot.predict() # return the move to do using the python-chess format
         if chess_move:
             # print("there's a move")
             move_uci = chess_move.uci() # string format like "e2e4" or "e7e8q"
@@ -397,8 +398,6 @@ class ChessBoard(QWidget):
 
             self.switch_turn()    # Change player's turn
 
-            # Append the evaluation of the board to self.evals
-            self.evals.append(self.evaluate())
 
         else:
             pass
@@ -456,14 +455,12 @@ class ChessBoard(QWidget):
         """
         Launch the complex model.
         """
-        # print("HELLO")
-        self.isComplex = True   # telling the class that there is a complex bot (for the play_bot method)
         if type == "bot":
-            self.bot = SmartChessBot("complex_model/policy_net_model.pt", "complex_model/value_net_model.pt" ) # construct the bot object
+            self.bot = SmartChessBot(self.engine, "complex_model/policy_net_model.pt", "complex_model/value_net_model.pt" ) # construct the bot object
         elif type == "white":
-            self.white_player = SmartChessBot("complex_model/policy_net_model.pt", "complex_model/value_net_model.pt" )
+            self.white_player = SmartChessBot(self.engine, "complex_model/policy_net_model.pt", "complex_model/value_net_model.pt" )
         elif type == "black":
-            self.black_player = SmartChessBot("complex_model/policy_net_model.pt", "complex_model/value_net_model.pt" )
+            self.black_player = SmartChessBot(self.engine, "complex_model/policy_net_model.pt", "complex_model/value_net_model.pt" )
 
 
 
@@ -636,8 +633,7 @@ class ChessBoard(QWidget):
             - choose is there is a bot or no
             - choose the player's color
         """
-        # print(f"White's player: {white_player}")
-        # print(f"Black's player: {black_player}")
+        self.players = [white_player, black_player]
 
         # Check if there's two humans, two bots or a human a a bot
 
@@ -762,14 +758,40 @@ class ChessBoard(QWidget):
         else:
             QTimer.singleShot(500, lambda: self.start_game())
 
-    def evaluate(self):
+
+    def save_game(self):
         """
-        Evaluate the chessboard using the StockFish method
+        Save the game in a pgn file to evaluate it further.
         """
-        with Stockfish(self.engine, elo=200) as stockfish:
-            score = stockfish.evaluate(self.engine.board)
-            # print(score)
-            return score
+        game = chess.pgn.Game()
+        board = chess.Board()
+
+        game.headers["Event"] = "My Chess Game"
+        game.headers["White"] = self.players[0]
+        game.headers["Black"] = self.players[1]
+        game.headers["Result"] = "*"
+
+        node = game
+
+        uci_moves = [move.uci() for move in self.engine.board.move_stack]
+
+
+        for move in uci_moves:
+            move_obj = board.push_san(move)
+            node = node.add_variation(move_obj)
+
+        # Save to PGN file
+        with open("my_game.pgn", "w") as pgn_file:
+            print(game, file=pgn_file)
+
+
+    def eval_game(self):
+        """
+        Evaluate the game just played.
+        """
+        self.save_game()
+        self.evaluator.evaluate_game("my_game.pgn")
+
 
 
     # -------- Game state methods --------

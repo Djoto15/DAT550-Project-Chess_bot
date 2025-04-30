@@ -117,4 +117,3 @@ class Back_Front():
                     col_idx += 1
 
         return board
-        
