@@ -18,6 +18,15 @@ First, you need to clone the repository into a direction on your computer using 
     <li>python -m venv .venv (Windows)</li>
     <li>python3 -m venv .venv (Linux)</li>
 </ul>
+'''bash
+python -m venv .venv
+'''
+(Windows)
+
+'''bash
+python3 -m venv .venv
+'''
+(Linux)
 
 Then activate the environment:
 <ul>
@@ -69,13 +78,7 @@ Run the file <i>evaluate_vs_stockfish.py</i> in order to plot the success rate o
 
 <h3>Complex Models - Neural Networks</h3>
 
-## 🛠 Requirements
 
-- `torch`
-- `numpy`
-- `matplotlib`
-- `python-chess`
-- `tqdm`
 
 ##  Train the ValueNet
 
