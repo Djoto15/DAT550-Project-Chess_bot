@@ -18,14 +18,15 @@ First, you need to clone the repository into a direction on your computer using 
     <li>python -m venv .venv (Windows)</li>
     <li>python3 -m venv .venv (Linux)</li>
 </ul>
-'''bash
+
+```bash
 python -m venv .venv
-'''
+```
 (Windows)
 
-'''bash
+```bash
 python3 -m venv .venv
-'''
+```
 (Linux)
 
 Then activate the environment:
