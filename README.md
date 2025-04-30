@@ -6,7 +6,7 @@ Members: Raphaël Gauthier, Harry Chicheortiche, Ronald Paleczny
 The project consists of designing a chess bot through several methods:
 <ul>
     <li>Four baseline models using decision tree, random forest and a Monte-Carlo Tree Search.</li>
-    <li>Two complex models using CNN</li>
+    <li>One complex model using Convolutionnal Neural Networks (CNN)</li>
 </ul>
 
 The following explains how to use the code we wrote.
@@ -19,7 +19,7 @@ First, you need to clone the repository into a direction on your computer using 
     <li>python3 -m venv .venv (Linux)</li>
 </ul>
 
-The activate the environment:
+Then activate the environment:
 <ul>
     <li>source .venv/bin/activate (Linux)</li>
     <li>source .venv/Scripts/activate (Windows + bash terminal)</li>
@@ -35,6 +35,10 @@ If you have another method to create an environment like anaconda, it should wor
 
 <h3>Stockfish evaluator</h3>
 You need to install the stockfish bot in order to evaluate the bots. You can download it on this <a href = https://stockfishchess.org/download>link</a>
+<br><br>
+Then you have to change the stockfish path in the stockfish.py file in the bot folder.
+<br><br>
+If you just want to see how the bots performed against each other or yourself, you should be able to do that without installing stockfish.
 
 <h3>Notebooks</h3>
 They are several notebooks that are interested to see.
@@ -53,6 +57,10 @@ You can choose the white player and the black player. If it is a two bots game, 
 <div style="text-align: center;">
     <img src="images/gui.png" alt="Logo" width="300" />
 </div>
+
+There are several actions in the menus at the top of the window. You can save the game once played into a pgn file, evaluate the game whiwh will show you a graph with the CP scores for the entire game or a debbug game which will set a specific position that you can change in the chessboard.py file (gui folder) at the line 620.<br>
+The evaluate game action takes a little time to run (few seconds) and will freeze the pyqt5 window during that time.
+<br><br>
 
 <h3>Monte Carlo Tree Search (MCTS) Model</h3>
 
